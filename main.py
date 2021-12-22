@@ -12,6 +12,7 @@ from simple_parsing import ArgumentParser
 from agents import *
 from config.hparams import hparams
 
+from pytorch_lightning.loggers import WandbLogger
 # from apex import amp
 parser = ArgumentParser()
 # automatically add arguments for all the fields of the classes in hparams:
@@ -21,14 +22,14 @@ args = parser.parse_args()
 
 def main():
     # initialize wandb instance
-    run = wandb.init(config=vars(args.hparams), project="Recvis-Kaggle", allow_val_change=True)
-    config = wandb.config
+    wandb_run = WandbLogger(config=vars(args.hparams), project="test-project", entity="dinow-twins", allow_val_change=True)
+    config = wandb_run.experiment.config
     # Create the Agent and pass all the configuration to it then run it..
     agent_class = globals()[config.agent]
-    agent = agent_class(config, run)
+    agent = agent_class(config, wandb_run)
     # run the model
     agent.run()
-    agent.finalize()
+
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from utils.agent_utils import get_datamodule, get_net
+# from utils.agent_utils import get_datamodule, get_net
 from utils.callbacks import LogPredictionsCallback
 
 
@@ -13,6 +13,7 @@ class Base_Trainer:
         self.wb_run = run
         
     def run(self):
+        pass
         # if self.config.tune:
         #     trainer = pl.Trainer(
         #         logger=self.wb_run, gpus=1, auto_scale_batch_size= "power", accelerator="auto"
