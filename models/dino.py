@@ -167,7 +167,7 @@ class DINO_Loss(nn.Module):
     def update_center(self, teacher_output):
         """
         Update center used for teacher output.
-        Copy pasted from DINO github
+        Copy pasted from DINO github. Comented part are only required with distributed gpu
         """
         batch_center = torch.sum(teacher_output, dim=0, keepdim=True)
         #dist.all_reduce(batch_center)
