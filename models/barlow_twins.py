@@ -10,7 +10,7 @@ from torch.nn import functional as F
 from torch.optim import Adam
 
 
-class BASE_LitModule(LightningModule):
+class Barlow_Twins(LightningModule):
     def __init__(self, config, encoder):
         """method used to define our model parameters"""
         super().__init__()
