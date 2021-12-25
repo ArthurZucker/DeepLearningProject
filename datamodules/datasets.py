@@ -5,14 +5,14 @@ import torch
 from torch.utils.data import Dataset
 
 class CIFAR_DINO(Dataset):
-    def __init__(self, config, data, transform_global1= None, transform_global2= None, transform_local= None):
+    def __init__(self, data,  n_crops, n_global_crops, transform_global1= None, transform_global2= None, transform_local= None):
 
         self.data = data
         self.transform_global1 = transform_global1
         self.transform_global2 = transform_global2
         self.transform_local = transform_local
-        self.n_crops = config.n_crops
-        self.n_global_crops = config.n_global_crops
+        self.n_crops = n_crops
+        self.n_global_crops = n_global_crops
 
     def __len__(self):
         return len(self.data)
@@ -30,3 +30,31 @@ class CIFAR_DINO(Dataset):
             transformed_crops.append(self.transform_local(image = image)['image'])
         
         return transformed_crops
+    
+    
+class CIFAR_BT(Dataset):
+    def __init__(self, data, transform1= None, transform2= None):
+
+        self.data = data
+        self.transform1 = transform1
+        self.transform2 = transform2
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        label = self.data[idx][1]
+
+        image = np.array(self.data[idx][0])
+        image1 = image
+        image2 = image
+        
+        #Transform the same image with 2 different transforms
+        if self.transform1 is not None:
+            image1 = self.transform1(image = image)['image']
+
+        if self.transform2 is not None:
+            image2 = self.transform2(image = image)['image']
+        
+
+        return image1, image2, label    

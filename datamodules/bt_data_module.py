@@ -6,22 +6,17 @@ from torch.utils.data import DataLoader, random_split
 
 import torchvision 
 
-from datasets import CIFAR_DINO
-from augmentations import transform_global1, transform_global2, transform_local
+from datasets import CIFAR_BT
+from augmentations import BT_Transforms
 
 
-class Dino_DataModule(LightningDataModule):
+class BT_DataModule(LightningDataModule):
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.batch_size = config.batch_size
         self.data_dir = config.data_dir
-        
-        self.n_crops = config.n_crops
-        self.n_global_crops = config.n_global_crops
-        
-        self.transform_global1 = transform_global1(config)
-        self.transform_global2 = transform_global2(config)
-        self.transform_local = transform_local(config)
+        self.transform1, self.transform2 = BT_Transforms(config.img_size)
 
 
     def prepare_data(self):
@@ -36,10 +31,8 @@ class Dino_DataModule(LightningDataModule):
         if stage in (None, "fit"):
             cifar_train = torchvision.datasets.CIFAR10(root=os.getcwd(), train=True)
             cifar_val = torchvision.datasets.CIFAR10(root=os.getcwd(), train=False)
-            self.data_train = CIFAR_DINO( cifar_train, self.n_crops, self.n_global_crops, transform_global1=self.transform_global1,
-                                        transform_global2=self.transform_global2, transform_local=self.transform_local)
-            self.data_val = CIFAR_DINO(cifar_val, self.n_crops, self.n_global_crops, transform_global1=self.transform_global1,
-                                        transform_global2=self.transform_global2, transform_local=self.transform_local)
+            self.data_train = CIFAR_BT( cifar_train, transform1= self.transform1, transform2= self.transform2)
+            self.data_val = CIFAR_BT( cifar_val,transform1= self.transform1, transform2= self.transform2)
 
     # return the dataloader for each split
     def train_dataloader(self):
@@ -58,6 +51,3 @@ class Dino_DataModule(LightningDataModule):
         mnist_predict = DataLoader(self.mnist_predict, batch_size=self.batch_size)
         return mnist_predict
     '''
-    
-    
-    
