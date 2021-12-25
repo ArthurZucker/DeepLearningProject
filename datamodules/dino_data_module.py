@@ -40,11 +40,11 @@ class Dino_DataModule(LightningDataModule):
 
     # return the dataloader for each split
     def train_dataloader(self):
-        train_loader = DataLoader(self.data_train, batch_size=self.batch_size)
+        train_loader = DataLoader(self.data_train, batch_size=self.batch_size, shuffle=True)
         return train_loader
 
     def val_dataloader(self):
-        val_loader = DataLoader(self.data_val, batch_size=self.batch_size)
+        val_loader = DataLoader(self.data_val, batch_size=self.batch_size, shuffle=False)
         return val_loader
     '''
     def test_dataloader(self):
