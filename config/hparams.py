@@ -28,11 +28,19 @@ class hparams:
     
     
     ###Probably needs a different organization but I put the new parameters here
-    # assumes square images
-    img_size: int = 32
-    #number of crops/global_crops
-    n_crops = 8
-    n_global_crops = 2
-    global_crops_scale = (0.5,1)
-    local_crops_scale = (0.08, 0.5)
+    
         
+@dataclass
+class BarlwoConfig:
+    """Hyperparameters specific to Barlow Twin Model.
+    Used when the `arch` option is set to "Barlow" in the hparams
+    """
+    # Image size, assumes square images
+    img_size: int = 32
+    # number of crops/global_crops
+    n_crops: int = 8
+    # number of global crops 
+    n_global_crops: int = 2
+    # scale range of the global crops 
+    global_crops_scale: List[int]   = list_field(0.5,1)
+    local_crops_scale:  List[float] = list_field(0.08, 0.5)
