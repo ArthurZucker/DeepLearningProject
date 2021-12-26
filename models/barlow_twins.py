@@ -29,8 +29,9 @@ class BASE_LitModule(LightningModule):
         self.encoder = encoder  # TODO add encoder name to the hparams, use getnet() to get the encoder
         try:
             self.in_features = list(self.encoder.children())[-1].in_features
-            last_layer_name = list(self.encoder.named_children())[-1][0]
-
+            last_layer_name = list(self.encoder.named_children())[-1][0]    
+            
+            #TODO encoder might not always have those layers
             if last_layer_name == "head":
                 self.encoder.head = nn.Identity()
             else:
