@@ -7,13 +7,13 @@ from albumentations.pytorch import ToTensorV2
 import cv2
 
 
-def transform_global1(config):
+def transform_global1(img_size, global_crops_scale):
     
     # Here, A.RandomBrightnessContrast and A.HueSaturationValue replace the ColorJitter  
     # because the torchvision.transform implementation of ColorJitter is different from the Albumentation one 
     transform = A.Compose(
         [
-            A.RandomResizedCrop (height=config.img_size, width=config.img_size, scale=config.global_crops_scale, interpolation=cv2.INTER_CUBIC, p=1.0),
+            A.RandomResizedCrop (height=img_size, width=img_size, scale=global_crops_scale, interpolation=cv2.INTER_CUBIC, p=1.0),
             A.RandomBrightnessContrast(brightness_limit=0.4, contrast_limit=0.4, p=0.8),
             A.HueSaturationValue(hue_shift_limit=int(0.1 * 180),
                                  sat_shift_limit=int(0.2 * 255),
@@ -31,13 +31,13 @@ def transform_global1(config):
 
     return transform
 
-def transform_global2(config):
+def transform_global2(img_size, global_crops_scale):
     
     # Here, A.RandomBrightnessContrast and A.HueSaturationValue replace the ColorJitter  
     # because the torchvision.transform implementation of ColorJitter is different from the Albumentation one 
     transform = A.Compose(
         [
-            A.RandomResizedCrop (height=config.img_size, width=config.img_size, scale=config.global_crops_scale, interpolation=cv2.INTER_CUBIC, p=1.0),
+            A.RandomResizedCrop (height=img_size, width=img_size, scale=global_crops_scale, interpolation=cv2.INTER_CUBIC, p=1.0),
             A.RandomBrightnessContrast(brightness_limit=0.4, contrast_limit=0.4, p=0.8),
             A.HueSaturationValue(hue_shift_limit=int(0.1 * 180),
                                  sat_shift_limit=int(0.2 * 255),
@@ -56,13 +56,13 @@ def transform_global2(config):
 
     return transform
 
-def transform_local(config):
+def transform_local(img_size, local_crops_scale):
     
     # Here, A.RandomBrightnessContrast and A.HueSaturationValue replace the ColorJitter  
     # because the torchvision.transform implementation of ColorJitter is different from the Albumentation one 
     transform = A.Compose(
         [
-            A.RandomResizedCrop (height=config.img_size, width=config.img_size, scale=config.local_crops_scale, interpolation=cv2.INTER_CUBIC, p=1.0),
+            A.RandomResizedCrop (height=img_size, width=img_size, scale=local_crops_scale, interpolation=cv2.INTER_CUBIC, p=1.0),
             A.RandomBrightnessContrast(brightness_limit=0.4, contrast_limit=0.4, p=0.8),
             A.HueSaturationValue(hue_shift_limit=int(0.1 * 180),
                                  sat_shift_limit=int(0.2 * 255),

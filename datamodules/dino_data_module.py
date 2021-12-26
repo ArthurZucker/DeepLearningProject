@@ -19,9 +19,9 @@ class Dino_DataModule(LightningDataModule):
         self.n_crops = config.n_crops
         self.n_global_crops = config.n_global_crops
         
-        self.transform_global1 = transform_global1(config)
-        self.transform_global2 = transform_global2(config)
-        self.transform_local = transform_local(config)
+        self.transform_global1 = transform_global1(config.img_size, config.global_crops_scale)
+        self.transform_global2 = transform_global2(config.img_size, config.global_crops_scale)
+        self.transform_local = transform_local(config.img_size, config.local_crops_scale)
 
 
     def prepare_data(self):
