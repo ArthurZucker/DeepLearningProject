@@ -76,8 +76,10 @@ def visualize_augmentations_BT_dataset(dataset, idx=0, samples=10, cols=5):
     rows = samples // cols
     figure, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(12, 6))
     for i in range(samples):
-        image,image2,  _ = dataset[idx]
-        ax.ravel()[i].imshow(image2)
+        image1,image2,  _ = dataset[idx]
+        images = [image1,image2]
+        rand = random.randint(0,1)
+        ax.ravel()[i].imshow(images[rand])
         ax.ravel()[i].set_axis_off()
     plt.tight_layout()
     plt.show()  
