@@ -15,8 +15,12 @@ Most notably, the agent, dataset, optimizer and loss can all be specified and au
 @dataclass
 class hparams:
     """Hyperparameters of Your Model"""
+    # data directory
+    data_dir = './data'
     # learning rate 
     lr : float = 3e-4
+    # batch size 
+    batch_size = 128
     # lambda coefficient used for FIXME
     lmbda: float = 0.05
     # number of channels to use for projection
@@ -31,5 +35,4 @@ class hparams:
     n_global_crops = 2
     global_crops_scale = (0.5,1)
     local_crops_scale = (0.08, 0.5)
-
-    
+        

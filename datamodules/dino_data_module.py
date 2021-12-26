@@ -25,17 +25,17 @@ class Dino_DataModule(LightningDataModule):
 
 
     def prepare_data(self):
-        torchvision.datasets.CIFAR10(root=os.getcwd(), train=True,
+        torchvision.datasets.CIFAR10(root=self.data_dir, train=True,
                                         download=True, transform=None)
-        torchvision.datasets.CIFAR10(root=os.getcwd(), train=False,
+        torchvision.datasets.CIFAR10(root=self.data_dir, train=False,
                                         download=True, transform=None)
 
     def setup(self, stage: Optional[str] = None):
         
         # split dataset
         if stage in (None, "fit"):
-            cifar_train = torchvision.datasets.CIFAR10(root=os.getcwd(), train=True)
-            cifar_val = torchvision.datasets.CIFAR10(root=os.getcwd(), train=False)
+            cifar_train = torchvision.datasets.CIFAR10(root=self.data_dir, train=True)
+            cifar_val = torchvision.datasets.CIFAR10(root=self.data_dir, train=False)
             self.data_train = CIFAR_DINO( cifar_train, self.n_crops, self.n_global_crops, transform_global1=self.transform_global1,
                                         transform_global2=self.transform_global2, transform_local=self.transform_local)
             self.data_val = CIFAR_DINO(cifar_val, self.n_crops, self.n_global_crops, transform_global1=self.transform_global1,

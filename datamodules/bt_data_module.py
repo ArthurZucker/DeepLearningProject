@@ -16,21 +16,22 @@ class BT_DataModule(LightningDataModule):
         self.config = config
         self.batch_size = config.batch_size
         self.data_dir = config.data_dir
+        
         self.transform1, self.transform2 = BT_Transforms(config.img_size)
 
 
     def prepare_data(self):
-        torchvision.datasets.CIFAR10(root=os.getcwd(), train=True,
+        torchvision.datasets.CIFAR10(root=self.data_dir, train=True,
                                         download=True, transform=None)
-        torchvision.datasets.CIFAR10(root=os.getcwd(), train=False,
+        torchvision.datasets.CIFAR10(root=self.data_dir, train=False,
                                         download=True, transform=None)
 
     def setup(self, stage: Optional[str] = None):
         
         # split dataset
         if stage in (None, "fit"):
-            cifar_train = torchvision.datasets.CIFAR10(root=os.getcwd(), train=True)
-            cifar_val = torchvision.datasets.CIFAR10(root=os.getcwd(), train=False)
+            cifar_train = torchvision.datasets.CIFAR10(root=self.data_dir, train=True)
+            cifar_val = torchvision.datasets.CIFAR10(root=self.data_dir, train=False)
             self.data_train = CIFAR_BT( cifar_train, transform1= self.transform1, transform2= self.transform2)
             self.data_val = CIFAR_BT( cifar_val,transform1= self.transform1, transform2= self.transform2)
 
