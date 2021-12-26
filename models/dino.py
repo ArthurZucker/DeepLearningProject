@@ -19,6 +19,8 @@ class DINO(LightningModule):
         # optimizer parameters
         self.lr = config.lr
 
+        self.n_global_crops = config.n_global_crops
+
         # save hyper-parameters to self.hparams (auto-logged by W&B)
         # self.save_hyperparameters()
 
@@ -121,7 +123,8 @@ class DINO_Loss(nn.Module):
         #the centering operation requires tu update a buffer of centers
         self.register_buffer("center", torch.zeros(1, config.out_dim))
         
-        # Without a warmup on the teacher temperature, trining becomes unstable
+        # Without a warmup on the teacher temperature, training becomes unstable
+        #To be reviewed and fixed
         self.teacher_temp_schedule = np.concatenate((
             np.linspace(config.warmup_teacher_temp,
                         self.teacher_temp, config.warmup_teacher_temp_epochs),
