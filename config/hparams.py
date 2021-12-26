@@ -29,4 +29,7 @@ class hparams:
     #number of crops/global_crops
     n_crops = 8
     n_global_crops = 2
+    global_crops_scale = (0.5,1)
+    local_crops_scale = (0.08, 0.5)
+
     
