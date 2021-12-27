@@ -6,6 +6,7 @@ import random
 import torch
 import simple_parsing
 import os
+from os import path as osp
 """Dataclass allows to have arguments and easily use wandb's weep module.
 
 Each arguments can be preceded by a comment, which will describe it when you call 'main.pu --help
@@ -18,7 +19,7 @@ Most notably, the agent, dataset, optimizer and loss can all be specified and au
 class Hparams:
     """Hyperparameters of Your Model"""
     # data directory
-    data_dir = './data'
+    save_dir: str = osp.join(os.getcwd(), "wandb")
     # learning rate 
     lr : float = 3e-4
     # batch size 
@@ -29,9 +30,59 @@ class Hparams:
     encoder: str = "resnet50"
     #method 
     method : str= "barlow"
-    
+    # seed for the whole run
+    seed_everything: int = 40
+    # gpu to use
+    gpu: int = 0
+    # project  
+    wandb_project: str = "test-deep-learning"
+    # wandb entity
+    wandb_entity: str = "dinow-twins"
+    # resize coefficients for H and w
+    input_size: tuple = (256, 256)
+    # learning rate
+    lr: float = 0.0005
+    # agent to use for training
+    agent: str = "trainer"
+    # architecture to use
+    arch: str = "BarlowTwins"
+    # encoder for barlow
+    encoder: str = "resnet50"
+    # data module
+    datamodule: str = "BarlowTwinsCIFAR10DataModule"
+    # number of workers for dataloaders
+    num_workers: int = 16
+    # tune the model on first run
+    tune_lr: bool = False
+    # tune the model on first run
+    tune_batch_size: bool = False
+    # number or gpu
+    gpu: int = 1
+    # precision
+    precision: int = 32
+    # validation frequency
+    val_freq: int = 1
+    # developpment mode, only run 1 batch of train val and test
+    dev_run: bool = False
+    # gradient accumulation batch size
+    accumulate_size: int = 32
+    # batch size for training
+    batch_size: int = 8
+    # maximum number of epochs
+    max_epochs: int = 40
 
-
+    #### TODO imperatively solve the hparams config args
+    # Image size, assumes square images
+    img_size: int = 32
+    # number of crops/global_crops
+    n_crops: int = 8
+    # number of global crops 
+    n_global_crops: int = 2
+    # scale range of the global crops 
+    global_crops_scale: List[int]   = list_field(0.5,1)
+    local_crops_scale:  List[float] = list_field(0.08, 0.5)
+    # lambda coefficient used for FIXME ??????????
+    lmbda: float = 0.05
 @dataclass
 class DatasetParams:
     """Dataset Parameters"""
