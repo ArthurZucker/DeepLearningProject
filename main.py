@@ -1,5 +1,5 @@
 """
-Auteur: Arthur Zucker
+Auteur: Léo Tronchon & Arthur Zucker 
 - Capture configuration
 - Update with argvs
 - launches training through agent
@@ -7,28 +7,33 @@ Auteur: Arthur Zucker
 from __future__ import absolute_import, division
 
 import wandb
-from simple_parsing import ArgumentParser
+
 
 from agents import *
-from config.hparams import hparams
+from config.hparams import Parameters
 
 from pytorch_lightning.loggers import WandbLogger
-# from apex import amp
-parser = ArgumentParser()
-# automatically add arguments for all the fields of the classes in hparams:
-parser.add_arguments(hparams, dest="hparams")
-args = parser.parse_args()
 
 
 def main():
+    parameters = Parameters.parse()
     # initialize wandb instance
-    wandb_run = WandbLogger(config=vars(args.hparams), project="test-project", entity="dinow-twins", allow_val_change=True)
+    wandb_run = WandbLogger(
+        config=vars(parameters.hparams),  # FIXME use the full parameters
+        project=parameters.hparams.wandb_project,
+        entity=parameters.hparams.wandb_entity,
+        allow_val_change=True,
+        save_dir=parameters.hparams.save_dir,
+    )
     config = wandb_run.experiment.config
+    # seed_everything(config.seed_everything)
+    wandb.define_metric("val/loss", summary="min")
     # Create the Agent and pass all the configuration to it then run it..
     agent_class = globals()[config.agent]
     agent = agent_class(config, wandb_run)
     # run the model
     agent.run()
+    # agent.finalize()
 
 
 
