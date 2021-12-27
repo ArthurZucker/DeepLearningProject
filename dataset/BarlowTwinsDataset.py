@@ -14,7 +14,7 @@ class BarlowTwinsDataset(CIFAR10):
         self.transform = BarlowTwinsTransform(img_size)
 
     def __getitem__(self, idx):
-        image = Image.fromarray(self.data[idx])
+        image = Image.fromarray(self.data[idx]) # FIXME Image.fromarray might not be needed
         image = np.array(image)
         # Transform the same image with 2 different transforms
         if self.transform is not None:
