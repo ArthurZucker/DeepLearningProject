@@ -30,7 +30,6 @@ class BarlowTwinsCIFAR10DataModule(LightningDataModule):
             self.cifar_train = BarlowTwinsDataset(
                 self.root, img_size=self.config.input_size,train =True,download =True
             )
-        if stage == "validate":
             self.cifar_val = BarlowTwinsDataset(
                 self.root, img_size=self.config.input_size,train = False,download =True
             )
