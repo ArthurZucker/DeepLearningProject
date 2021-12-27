@@ -6,7 +6,7 @@ from utils.callbacks import LogBarlowPredictionsCallback
 
 from agents.BaseTrainer import BaseTrainer
 
-class BT_trainer(BaseTrainer):
+class trainer(BaseTrainer):
     def __init__(self, config, run):
         super().__init__(config, run)
 
