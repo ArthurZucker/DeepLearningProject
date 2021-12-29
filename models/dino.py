@@ -1,35 +1,40 @@
 import os
-import numpy as np
 
+import numpy as np
 import torch
 import torch.nn as nn
-import torchmetrics # TODO use later
-
+import torchmetrics  # TODO use later
 from pytorch_lightning import LightningModule
-
 from torch.nn import functional as F
 from torch.optim import Adam
+from utils.agent_utils import get_net
 
 from models.losses.dino_loss import DinoLoss
+
+
 class DINO(LightningModule):
 
-    def __init__(self, config, student_backbone, teacher_backbone, student_head, teacher_head, dino_loss):
+    def __init__(self, network_param,optim_param = None):
         '''method used to define our model parameters'''
         super().__init__()
 
+        self.n_global_crops = network_param.n_global_crops
+
+        self.momentum_schedule = network_param.momentum_schedule
+        #self.loss = BarlowTwinsLoss
+        self.loss = DinoLoss(network_param.lmbda)
         # optimizer parameters
-        self.lr = config.lr
-
-        self.n_global_crops = config.n_global_crops
-
-        # save hyper-parameters to self.hparams (auto-logged by W&B)
-        # self.save_hyperparameters()
+        self.optim_param = optim_param
 
 
         # get backbone models and adapt them to the self-supervised task
         self.head_in_features = 0
-        self.student_backbone = student_backbone
-        self.teacher_backbone = teacher_backbone
+        self.student_backbone = get_net(
+            network_param.student_backbone,network_param
+        )
+        self.teacher_backbone = get_net(
+            network_param.teacher_backbone,network_param
+        )
         
         self.in_features = list(self.encoder.children())[-1].in_features
         name_classif = list(self.encoder.named_children())[-1][0]
@@ -37,9 +42,9 @@ class DINO(LightningModule):
         # self.teacher_backbone._modules[name_classif]  = nn.Identity() ^^^^^^^^^ this should also do the same 
         
         # Make Projector/Head (default: 3-layers)
-        self.proj_channels = config.dino_proj_channels
-        self.out_channels = config.dino_out_channels
-        self.proj_layers = config.dino_proj_layers
+        self.proj_channels = network_param.dino_proj_channels
+        self.out_channels = network_param.dino_out_channels
+        self.proj_layers = network_param.dino_proj_layers
         proj_layers = []
         for i in range(self.proj_layers):
             # First Layer
@@ -64,7 +69,6 @@ class DINO(LightningModule):
         self.student_head = nn.Sequential(*proj_layers.clone())
         self.teacher_head = nn.Sequential(*proj_layers.clone())
         
-        self.dino_loss = dino_loss
 
     def forward(self, crops):
         
@@ -88,6 +92,7 @@ class DINO(LightningModule):
         
         #get only the global crops for the teacher
         loss = self._get_loss(batch)
+        
 
         # Log loss and metric
         self.log('train_loss', loss)
@@ -112,7 +117,12 @@ class DINO(LightningModule):
     
     def configure_optimizers(self):
         '''defines model optimizer'''
-        return Adam(self.parameters(), lr=self.lr)
+        optimizer = getattr(torch.optim,self.optim_param.optimizer)
+        optimizer = optimizer(self.parameters(), lr=self.optim_param.lr)
+        # scheduler = LinearWarmupCosineAnnealingLR(
+        #     optimizer, warmup_epochs=5, max_epochs=40
+        # )
+        return optimizer
     
     def _get_loss(self, batch):
         '''convenience function since train/valid/test steps are similar'''
@@ -122,5 +132,15 @@ class DINO(LightningModule):
 
         return loss
     
-    
-    
+    def on_epoch_end(self) -> None:
+
+        # EMA update for the teacher
+        with torch.no_grad():
+            m = self.momentum_schedule[self.epoch]  # momentum parameter
+            for param_q, param_k in zip(self.student_backbone.parameters(), self.teacher_backbone.parameters()):
+                param_k.mul_(m).add_((1 - m) * param_q.detach())
+            
+            for param_q, param_k in zip(self.student_head.parameters(), self.teacher_head.parameters()):
+                param_k.mul_(m).add_((1 - m) * param_q.detach())
+        
+        
