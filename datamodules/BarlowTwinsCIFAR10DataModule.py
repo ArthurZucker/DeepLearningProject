@@ -2,7 +2,7 @@ import os
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
-from dataset.BarlowTwinsDataset import BarlowTwinsDataset
+from datasets.BarlowTwinsDataset import BarlowTwinsDataset
 
 # TODO add validation loader and transforms
 
@@ -43,3 +43,11 @@ class BarlowTwinsCIFAR10DataModule(LightningDataModule):
         )
         return cifar_train
 
+    def val_dataloader(self):
+        cifar_val = DataLoader(
+            self.cifar_val,
+            batch_size=self.batch_size,
+            num_workers=self.config.num_workers,
+            shuffle=True,
+        )
+        return cifar_val

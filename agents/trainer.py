@@ -25,7 +25,7 @@ class trainer(BaseTrainer):
                 ModelCheckpoint(monitor="val/loss", mode="min", verbose=True),  # our model checkpoint callback
                 RichProgressBar(),
                 LearningRateMonitor(),
-                LogBarlowPredictionsCallback()
+                # LogBarlowPredictionsCallback() FIXME memory error had to remove it
             ],  # logging of sample predictions
             gpus=self.config.gpu,  # use all available GPU's
             max_epochs=self.config.max_epochs,  # number of epochs
@@ -33,9 +33,9 @@ class trainer(BaseTrainer):
             accelerator="auto",
             check_val_every_n_epoch=self.config.val_freq,
             fast_dev_run=self.config.dev_run,
-            accumulate_grad_batches=self.config.accumulate_size,
+            # accumulate_grad_batches=self.config.accumulate_size,
             log_every_n_steps=1,
-            limit_train_batches=10
+            limit_train_batches=2
             # detect_anomaly = True,
         )
         trainer.logger = self.wb_run

@@ -1,26 +1,22 @@
-import os
-
-import torch
 import torch.nn as nn
-import torchmetrics # TODO use later
-
+from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning import LightningModule
-
 from torch.nn import functional as F
 from torch.optim import Adam
-
-from models.losses.barlow_twins import BarlowTwinsLoss
 from utils.agent_utils import get_net
 
-class Barlow_Twins(LightningModule):
-    def __init__(self, config, encoder):
+from models.losses.barlow_twins import BarlowTwinsLoss
+from models.optimizers.lars import LARS
+
+class BarlowTwins(LightningModule):
+    def __init__(self, config):
         """method used to define our model parameters"""
         super().__init__()
 
         self.loss = BarlowTwinsLoss
         # optimizer parameters
         self.lr = config.lr
-
+        self.log_pred_freq = config.log_pred_freq
         # save hyper-parameters to self.hparams (auto-logged by W&B)
         # self.save_hyperparameters()
 
@@ -79,10 +75,13 @@ class Barlow_Twins(LightningModule):
 
         return loss
 
-
     def configure_optimizers(self):
         """defines model optimizer"""
-        return Adam(self.parameters(), lr=self.lr)
+        optimizer = LARS(self.parameters(), lr=self.lr)
+        scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer, warmup_epochs=10, max_epochs=40
+        )
+        return [[optimizer], [scheduler]]
 
     def _get_loss(self, batch):
         """convenience function since train/valid/test steps are similar"""

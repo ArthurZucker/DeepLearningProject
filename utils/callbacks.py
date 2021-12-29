@@ -3,6 +3,7 @@ from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import WandbLogger
 import numpy as np
 
+
 class LogBarlowPredictionsCallback(Callback):
 
     def on_train_batch_end(
@@ -14,8 +15,20 @@ class LogBarlowPredictionsCallback(Callback):
         # which corresponds to our model predictions in this case
 
         # Let's log 20 sample image predictions from first batch
-        if batch_idx == 0:
+        if batch_idx == 0 and pl_module.current_epoch % pl_module.log_pred_freq == 0:
             self.log_images("train", batch, 5, outputs)
+
+    def on_validation_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+
+        # `outputs` comes from `LightningModule.validation_step`
+        # which corresponds to our model predictions in this case
+
+        # Let's log 20 sample image predictions from first batch
+        if batch_idx == 0 and pl_module.current_epoch % pl_module.log_pred_freq == 0:
+            self.log_images("val", batch, 5, outputs)
 
     def log_images(self, name, batch, n, outputs):
 
@@ -42,5 +55,7 @@ class LogBarlowPredictionsCallback(Callback):
             samples1.append(wandb.Image(bg1))
             samples2.append(wandb.Image(bg2))
             
-        wandb.log({"x1": samples1})
-        wandb.log({"x2":samples2}) #TODO merge graphs
+        wandb.log({f"{name}/x1": samples1})
+        wandb.log({f"{name}/x2": samples2}) #TODO merge graphs   
+
+    

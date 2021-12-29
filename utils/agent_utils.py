@@ -10,7 +10,7 @@ def get_net(args, name=None):
     name = name if name is not None else args.arch
     module = "models." + name
     mod = importlib.import_module(module)
-    net = getattr(mod, name)
+    net = getattr(mod,name)
     return net(args)
 
 
@@ -18,7 +18,7 @@ def get_datamodule(args):
     """
     Fetch Network Function Pointer
     """
-    module = "datamodule." + args.datamodule
+    module = "datamodules." + args.datamodule
     mod = importlib.import_module(module)
     net = getattr(mod, (args.datamodule))
     return net(args)

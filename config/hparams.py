@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, ClassVar
+from typing import List, ClassVar, Optional
 import numpy as np
 from simple_parsing.helpers import list_field
 import random 
@@ -20,10 +20,6 @@ class Hparams:
     """Hyperparameters of Your Model"""
     # data directory
     save_dir: str = osp.join(os.getcwd(), "wandb")
-    # learning rate 
-    lr : float = 3e-4
-    # batch size 
-    batch_size = 128
     # number of channels to use for projection
     bt_proj_channels: int = 2048 # TODO run a sweep for that?
     # backbone to use. Should match a specific format to be defined later
@@ -31,17 +27,15 @@ class Hparams:
     #method 
     method : str= "barlow"
     # seed for the whole run
-    seed_everything: int = 40
-    # gpu to use
-    gpu: int = 0
+    seed_everything: Optional[int] = None
     # project  
     wandb_project: str = "test-deep-learning"
     # wandb entity
     wandb_entity: str = "dinow-twins"
     # resize coefficients for H and w
-    input_size: tuple = (256, 256)
+    input_size: tuple = (32, 32)
     # learning rate
-    lr: float = 0.0005
+    lr: float = 0.4
     # agent to use for training
     agent: str = "trainer"
     # architecture to use
@@ -51,7 +45,7 @@ class Hparams:
     # data module
     datamodule: str = "BarlowTwinsCIFAR10DataModule"
     # number of workers for dataloaders
-    num_workers: int = 16
+    num_workers: int = 20
     # tune the model on first run
     tune_lr: bool = False
     # tune the model on first run
@@ -61,19 +55,19 @@ class Hparams:
     # precision
     precision: int = 32
     # validation frequency
-    val_freq: int = 1
+    val_freq: int = 10
     # developpment mode, only run 1 batch of train val and test
     dev_run: bool = False
     # gradient accumulation batch size
-    accumulate_size: int = 32
+    accumulate_size: int = 512
     # batch size for training
-    batch_size: int = 8
+    batch_size: int = 2048
     # maximum number of epochs
     max_epochs: int = 40
 
     #### TODO imperatively solve the hparams config args
     # Image size, assumes square images
-    img_size: int = 32
+    # img_size: int = 32
     # number of crops/global_crops
     n_crops: int = 8
     # number of global crops 
@@ -83,6 +77,10 @@ class Hparams:
     local_crops_scale:  List[float] = list_field(0.08, 0.5)
     # lambda coefficient used for FIXME ??????????
     lmbda: float = 0.05
+    # path to download pascal voc
+    asset_path: str = osp.join(os.getcwd(), "assets")
+    #log_pred_freq
+    log_pred_freq: int = 10
 @dataclass
 class DatasetParams:
     """Dataset Parameters"""
