@@ -25,7 +25,8 @@ class trainer(BaseTrainer):
                 ModelCheckpoint(monitor="val/loss", mode="min", verbose=True),  # our model checkpoint callback
                 RichProgressBar(),
                 LearningRateMonitor(),
-                # LogBarlowPredictionsCallback() FIXME memory error had to remove it
+                LogBarlowPredictionsCallback(self.config.log_pred_freq) ,
+                LogBarlowCCMatrixCallback(self.config.log_ccM_freq) # FIXME memory error had to remove it
             ],  # logging of sample predictions
             gpus=self.config.gpu,  # use all available GPU's
             max_epochs=self.config.max_epochs,  # number of epochs
