@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, RichProgressBar, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from utils.callbacks import LogBarlowPredictionsCallback, LogBarlowCCMatrixCallback
+from utils.callbacks import LogBarlowPredictionsCallback, LogBarlowCCMatrixCallback, LogMetricsCallBack
 
 from agents.BaseTrainer import BaseTrainer
 
@@ -18,8 +18,9 @@ class trainer(BaseTrainer):
                 ModelCheckpoint(monitor="val/loss", mode="min", verbose=True),  # our model checkpoint callback
                 RichProgressBar(),
                 LearningRateMonitor(),
-                LogBarlowPredictionsCallback(self.config.log_pred_freq) ,
-                LogBarlowCCMatrixCallback(self.config.log_ccM_freq) # FIXME memory error had to remove it
+                LogMetricsCallBack(),
+                # LogBarlowPredictionsCallback(self.config.log_pred_freq) , # FIXME only add these if we are using barlow
+                # LogBarlowCCMatrixCallback(self.config.log_ccM_freq) # FIXME memory error had to remove it
             ],  # logging of sample predictions
             gpus=self.config.gpu,  # use all available GPU's
             max_epochs=self.config.max_epochs,  # number of epochs

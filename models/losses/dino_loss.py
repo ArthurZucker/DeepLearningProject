@@ -4,7 +4,7 @@ from torch.nn import functional as F
 
 import numpy as np
 
-class DINO_Loss(nn.Module):
+class DinoLoss(nn.Module):
     def __init__(self, config): 
         super().__init__()
         

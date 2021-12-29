@@ -16,11 +16,11 @@ def get_net(arch,network_param, optimizer_param = None):
     return net(network_param,optimizer_param)
 
 
-def get_datamodule(datamodule,data_param):
+def get_datamodule(datamodule,data_param,dataset = None):
     """
     Fetch Network Function Pointer
     """
     module = "datamodules." + datamodule
     mod = importlib.import_module(module)
     net = getattr(mod, datamodule)
-    return net(data_param)
+    return net(data_param,dataset)

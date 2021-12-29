@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from utils.metrics import MetricsModule
 class LogBarlowPredictionsCallback(Callback):
     def __init__(self,log_pred_freq) -> None:
         super().__init__()
@@ -116,3 +117,41 @@ class LogBarlowCCMatrixCallback(Callback):
         wandb.log({f"cc_Matrix/{name}" : (wandb.Image(plt))})
         plt.close()
         self.cc_M = None
+
+class LogMetricsCallBack(Callback):
+    def __init__(self):
+        pass
+
+    def on_fit_start(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+
+        self.num_classes = pl_module.num_cat
+        self.metrics_train= MetricsModule( self.num_classes)
+        self.metrics_val = MetricsModule( self.num_classes)
+
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the train batch ends."""
+
+        _, y = batch
+        self.metrics_train.update_metrics(outputs["logits"], y)
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        """Called when the train epoch ends."""
+
+        self.metrics_train.log_metrics("train")
+
+    def on_validation_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the validation batch ends."""
+
+        _, y = batch
+        self.metrics_val.update_metrics(outputs["logits"], y)
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        """Called when the validation epoch ends."""
+
+        self.metrics_val.log_metrics("val")
