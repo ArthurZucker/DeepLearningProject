@@ -17,6 +17,7 @@ An example of every datatype is provided. Some of the available arguments are al
 Most notably, the agent, dataset, optimizer and loss can all be specified and automatically parsed
 """
 
+arch_to_datamodule = {"BarlowTwinsFT":"BarlowTwinsCIFAR10Eval","BarlowTwins":"BarlowTwinsCIFAR10DataModule"}
 
 @dataclass
 class Hparams:
@@ -24,9 +25,10 @@ class Hparams:
     wandb_project: str = "test-deep-learning"  # name of the project
     wandb_entity: str = "dinow-twins"  # name of the wandb entity, here our team
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
-    arch: str = choice(
-        "BarlowTwins", "Dino", "DinowTwin", default="BarlowTwins"
-    )  # training method, either Barlow, Dino, or DinowTwin
+    arch: str =  "BarlowTwinsFT" #choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
+    # datamodule to use, for now we only have one dataset, CIFAR10
+    datamodule: str = "BarlowTwinsDataModule"
+    dataset: Optional[str] = "BarlowTwinsDatasetEval"
     agent: str = "trainer"  # agent to use for training
     seed_everything: Optional[int] = None  # seed for the whole run
     input_size: tuple = (32, 32)  # resize coefficients (H,W) for classic transforms
@@ -84,12 +86,13 @@ class BarlowConfig:
     # lambda coefficient used to scale the scale of the redundancy loss
     # so it doesn't overwhelm the invariance loss
     lmbda: float = 5e-3
-    # datamodule to use, for now we only have one dataset, CIFAR10
-    datamodule: str = choice(
-        "BarlowTwinsCIFAR10DataModule",
-        default="BarlowTwinsCIFAR10DataModule",
-    )
+
     pretrained_encoder: bool = False
+
+    # number of classes to use for the fine tuning task
+    num_cat: int = 10 
+    # model checkpoint used in classification fine tuning
+    weight_checkpoint : Optional[str] = osp.join(os.getcwd(), "wandb/test-deep-learning/lebgzheo/checkpoints/epoch=189-step=4749.ckpt")
 
 
 @dataclass
@@ -125,7 +128,7 @@ class Parameters:
         # since we will use different models, backbones and datamodules
 
         # Set render number of channels
-        if self.hparams.arch == "BarlowTwins":
+        if "BarlowTwins" in self.hparams.arch :
             self.network_param: BarlowConfig = (
                 BarlowConfig()
             )  # TODO later we might need to do something

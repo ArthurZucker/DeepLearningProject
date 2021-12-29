@@ -11,7 +11,7 @@ class BaseTrainer:
         )
         self.wb_run.watch(self.model)
         self.datamodule = get_datamodule(
-            config.network_param.datamodule, config.data_param
+            config.hparams.datamodule, config.data_param,config.hparams.dataset
         )
 
     def run(self):
