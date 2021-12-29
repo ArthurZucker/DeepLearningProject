@@ -7,7 +7,7 @@ from utils.agent_utils import get_net
 
 from models.optimizers.lars import LARS
 
-class BarlowTwins(LightningModule):
+class BarlowTwinsFT(LightningModule):
     def __init__(self, network_param,optim_param, barlow_twins):
         """method used to define our model parameters
         Args: BarlowConfig : config = network parameters to use. 
