@@ -5,11 +5,11 @@ from torch.nn import functional as F
 import torch
 from utils.agent_utils import get_net
 
-from models.losses.barlow_twins import BarlowTwinsLoss, CrossCorrelationMatrixLoss
+from models.losses.barlow_twins import CrossCorrelationMatrixLoss
 from models.optimizers.lars import LARS
 
 class BarlowTwins(LightningModule):
-    def __init__(self, network_param,optim_param):
+    def __init__(self, network_param,optim_param = None):
         """method used to define our model parameters
         Args: BarlowConfig : config = network parameters to use. 
         """
@@ -17,10 +17,7 @@ class BarlowTwins(LightningModule):
         #self.loss = BarlowTwinsLoss
         self.loss = CrossCorrelationMatrixLoss(network_param.lmbda)
         # optimizer parameters
-        self.lr = optim_param.lr
-        self.optimizer = optim_param.optimizer
-        # Loss parameter
-        self.lmbda = network_param.lmbda
+        self.optim_param = optim_param
         # projection layers
         self.proj_channels = network_param.bt_proj_channels
         # get backbone model and adapt it to the task
@@ -77,12 +74,13 @@ class BarlowTwins(LightningModule):
 
     def configure_optimizers(self):
         """defines model optimizer"""
-        optimizer = getattr(torch.optim,self.optimizer)
-        optimizer = optimizer(self.parameters(), lr=self.lr)
+        optimizer = getattr(torch.optim,self.optim_param.optimizer)
+        optimizer = optimizer(self.parameters(), lr=self.optim_param.lr)
         # scheduler = LinearWarmupCosineAnnealingLR(
         #     optimizer, warmup_epochs=5, max_epochs=40
         # )
         return optimizer #[[optimizer], [scheduler]]
+
 
     def _get_loss(self, batch):
         """convenience function since train/valid/test steps are similar"""
