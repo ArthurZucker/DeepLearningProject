@@ -27,7 +27,6 @@ class DINO(LightningModule):
 
         # get backbone models and adapt them to the self-supervised task
         self.head_in_features = 0
-        self.proj_channels = config.proj_channels
         self.student_backbone = student_backbone
         self.teacher_backbone = teacher_backbone
         
