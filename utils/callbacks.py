@@ -1,21 +1,22 @@
+from seaborn.matrix import heatmap
 import wandb
 from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.loggers import WandbLogger
-import numpy as np
 
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 
 class LogBarlowPredictionsCallback(Callback):
+    def __init__(self,log_pred_freq) -> None:
+        super().__init__()
+        self.log_pred_freq = log_pred_freq
 
     def on_train_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
         """Called when the training batch ends."""
-
-        # `outputs` comes from `LightningModule.validation_step`
-        # which corresponds to our model predictions in this case
-
         # Let's log 20 sample image predictions from first batch
-        if batch_idx == 0 and pl_module.current_epoch % pl_module.log_pred_freq == 0:
+        if batch_idx == 0 and pl_module.current_epoch % self.log_pred_freq == 0:
             self.log_images("train", batch, 5, outputs)
 
     def on_validation_batch_end(
@@ -23,12 +24,10 @@ class LogBarlowPredictionsCallback(Callback):
     ):
         """Called when the training batch ends."""
 
-        # `outputs` comes from `LightningModule.validation_step`
-        # which corresponds to our model predictions in this case
-
         # Let's log 20 sample image predictions from first batch
-        if batch_idx == 0 and pl_module.current_epoch % pl_module.log_pred_freq == 0:
+        if batch_idx == 0 and pl_module.current_epoch % self.log_pred_freq == 0:
             self.log_images("val", batch, 5, outputs)
+
 
     def log_images(self, name, batch, n, outputs):
 
@@ -58,4 +57,62 @@ class LogBarlowPredictionsCallback(Callback):
         wandb.log({f"{name}/x1": samples1})
         wandb.log({f"{name}/x2": samples2}) #TODO merge graphs   
 
+        # FIXME should not be required but memory leaks were found
+        del samples1,samples2,x1,x2
+
+
+
+
+class LogBarlowCCMatrixCallback(Callback):
+    """Logs the cross correlation matrix obtain 
+    when computing the loss. This gives us an idea of 
+    how the network learns. 
+    TODO : when should we log ? 
+    TODO : should we average over batches only? Or epoch? 
+    For now, the average over the epoch will be computed
+    as a moving average. 
+    A hook should be registered on the loss, using a new argument in the loss 
+    loss.cc_M which will be stored each time and then deleted
     
+    """
+    def __init__(self,log_ccM_freq) -> None:
+        super().__init__()
+        self.log_ccM_freq = log_ccM_freq
+        self.cc_M  = None
+
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+        # Let's log 20 sample image predictions from first batch
+        if self.cc_M is not None : 
+            self.cc_M += (pl_module.loss.cc_M - self.cc_M)/(batch_idx+1) 
+        else: 
+            self.cc_M =  pl_module.loss.cc_M
+        del pl_module.loss.cc_M 
+
+        if batch_idx == 0 and pl_module.current_epoch % self.log_ccM_freq == 0:
+            self.log_cc_M("train")
+
+    def on_val_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+        # Let's log 20 sample image predictions from first batch
+        if self.cc_M is not None : 
+            self.cc_M += (pl_module.loss.cc_M - self.cc_M)/(batch_idx+1) 
+        else: 
+            self.cc_M =  pl_module.loss.cc_M
+        del pl_module.loss.cc_M 
+
+        if batch_idx == 0:
+            self.log_cc_M("val")
+
+    def log_cc_M(self,name):
+        heatmap = self.cc_M
+        ax = sns.heatmap(heatmap, cmap="rainbow",cbar=False)
+        plt.title(f"Cross correlation matrix")
+        ax.set_axis_off()
+        wandb.log({f"cc_Matrix/{name}" : (wandb.Image(plt))})
+        plt.close()
+        self.cc_M = None
