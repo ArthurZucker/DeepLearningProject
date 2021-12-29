@@ -10,7 +10,7 @@ from PIL import Image
 
 class BarlowTwinsDataset(CIFAR10):
     def __init__(self, root, img_size, train,download = False):
-        super().__init__(root=root,train = train, download = download)
+        super().__init__(root=root, train = train, download = download)
         self.transform = BarlowTwinsTransform(img_size)
 
     def __getitem__(self, idx):

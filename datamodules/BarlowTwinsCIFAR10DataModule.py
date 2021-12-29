@@ -13,14 +13,10 @@ class BarlowTwinsCIFAR10DataModule(LightningDataModule):
         self.batch_size = self.config.batch_size
         self.root = os.path.join(self.config.asset_path, "CIFAR10")
 
-    # When doing distributed training, Datamodules have two optional arguments for
-    # granular control over download/prepare/splitting data:
-
-    # OPTIONAL, called only on 1 GPU/machine
-    # def prepare_data(self):
-    # use to download
-    # BarlowTwinsDataset(root = self.root, image_set='trainval', download=False)
-    # BarlowTwinsDataset(root = self.root, image_set='val', download=False)
+    def prepare_data(self):
+    #use to download
+        BarlowTwinsDataset(root = self.root, img_size=self.config.input_size,train =True, download=True)
+        BarlowTwinsDataset(root = self.root, img_size=self.config.input_size,train =True, download=True)
 
     # OPTIONAL, called for every GPU/machine (assigning state is OK)
     def setup(self, stage=None):
@@ -28,10 +24,10 @@ class BarlowTwinsCIFAR10DataModule(LightningDataModule):
         # split dataset
         if stage in (None, "fit"):
             self.cifar_train = BarlowTwinsDataset(
-                self.root, img_size=self.config.input_size,train =True,download =True
+                self.root, img_size=self.config.input_size,train =True
             )
             self.cifar_val = BarlowTwinsDataset(
-                self.root, img_size=self.config.input_size,train = False,download =True
+                self.root, img_size=self.config.input_size,train = False
             )
 
     def train_dataloader(self):

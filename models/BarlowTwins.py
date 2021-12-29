@@ -2,37 +2,37 @@ import torch.nn as nn
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning import LightningModule
 from torch.nn import functional as F
-from torch.optim import Adam
+import torch
 from utils.agent_utils import get_net
 
-from models.losses.barlow_twins import BarlowTwinsLoss
+from models.losses.barlow_twins import BarlowTwinsLoss, CrossCorrelationMatrixLoss
 from models.optimizers.lars import LARS
 
 class BarlowTwins(LightningModule):
-    def __init__(self, config):
-        """method used to define our model parameters"""
+    def __init__(self, network_param,optim_param):
+        """method used to define our model parameters
+        Args: BarlowConfig : config = network parameters to use. 
+        """
         super().__init__()
-
-        self.loss = BarlowTwinsLoss
+        #self.loss = BarlowTwinsLoss
+        self.loss = CrossCorrelationMatrixLoss(network_param.lmbda)
         # optimizer parameters
-        self.lr = config.lr
-        self.log_pred_freq = config.log_pred_freq
-        # save hyper-parameters to self.hparams (auto-logged by W&B)
-        # self.save_hyperparameters()
-
+        self.lr = optim_param.lr
+        self.optimizer = optim_param.optimizer
         # Loss parameter
-        self.lmbda = config.lmbda
-
+        self.lmbda = network_param.lmbda
+        # projection layers
+        self.proj_channels = network_param.bt_proj_channels
         # get backbone model and adapt it to the task
         self.encoder = get_net(
-            config, config.encoder
+            network_param.encoder,network_param
         )  # TODO add encoder name to the hparams, use getnet() to get the encoder
         self.in_features = list(self.encoder.children())[-1].in_features
         name_classif = list(self.encoder.named_children())[-1][0]
         self.encoder._modules[name_classif] = nn.Identity()
 
         # Make Projector (3-layers)
-        self.proj_channels = config.bt_proj_channels
+        
         proj_layers = []
 
         for i in range(3):
@@ -77,17 +77,18 @@ class BarlowTwins(LightningModule):
 
     def configure_optimizers(self):
         """defines model optimizer"""
-        optimizer = LARS(self.parameters(), lr=self.lr)
-        scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer, warmup_epochs=10, max_epochs=40
-        )
-        return [[optimizer], [scheduler]]
+        optimizer = getattr(torch.optim,self.optimizer)
+        optimizer = optimizer(self.parameters(), lr=self.lr)
+        # scheduler = LinearWarmupCosineAnnealingLR(
+        #     optimizer, warmup_epochs=5, max_epochs=40
+        # )
+        return optimizer #[[optimizer], [scheduler]]
 
     def _get_loss(self, batch):
         """convenience function since train/valid/test steps are similar"""
         x1, x2 = batch
         z1, z2 = self(x1, x2)
 
-        loss = self.loss(z1, z2, self.lmbda)
+        loss = self.loss(z1, z2)
 
         return loss

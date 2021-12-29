@@ -4,14 +4,18 @@ from utils.agent_utils import get_datamodule, get_net
 
 class BaseTrainer:
     def __init__(self, config, run) -> None:
-        self.config = config
+        self.config = config.hparams
         self.wb_run = run
-        self.model = get_net(config)
+        self.model = get_net(
+            config.hparams.arch, config.network_param, config.optim_param
+        )
         self.wb_run.watch(self.model)
-        self.datamodule = get_datamodule(config)
+        self.datamodule = get_datamodule(
+            config.network_param.datamodule, config.data_param
+        )
 
     def run(self):
-        
+
         if self.config.tune_lr:
             trainer = pl.Trainer(
                 logger=self.wb_run,
@@ -21,7 +25,7 @@ class BaseTrainer:
             )
             trainer.logger = self.wb_run
             trainer.tune(self.model, datamodule=self.datamodule)
-        
+
         if self.config.tune_batch_size:
             trainer = pl.Trainer(
                 logger=self.wb_run,

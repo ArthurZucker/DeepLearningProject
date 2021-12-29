@@ -19,17 +19,17 @@ def main():
     parameters = Parameters.parse()
     # initialize wandb instance
     wandb_run = WandbLogger(
-        config=vars(parameters.hparams),  # FIXME use the full parameters
+        config=vars(parameters),  # FIXME use the full parameters
         project=parameters.hparams.wandb_project,
         entity=parameters.hparams.wandb_entity,
         allow_val_change=True,
         save_dir=parameters.hparams.save_dir,
     )
-    config = wandb_run.experiment.config
+    config = parameters
     # seed_everything(config.seed_everything)
-    wandb.define_metric("val/loss", summary="min")
+    # wandb.define_metric("val/loss", summary="min")
     # Create the Agent and pass all the configuration to it then run it..
-    agent_class = globals()[config.agent]
+    agent_class = globals()[config.hparams.agent]
     agent = agent_class(config, wandb_run)
     # run the model
     agent.run()
