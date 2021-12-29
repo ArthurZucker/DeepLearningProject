@@ -92,3 +92,4 @@ class BarlowTwins(LightningModule):
         loss = self.loss(z1, z2)
 
         return loss
+

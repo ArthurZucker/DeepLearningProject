@@ -15,8 +15,8 @@ class BarlowTwinsCIFAR10DataModule(LightningDataModule):
 
     def prepare_data(self):
     #use to download
-        BarlowTwinsDataset(root = self.root, img_size=self.config.input_size,train =True, download=True)
-        BarlowTwinsDataset(root = self.root, img_size=self.config.input_size,train =True, download=True)
+        BarlowTwinsDataset(root = self.root, img_size=self.config.input_size,train = True, download=True)
+        BarlowTwinsDataset(root = self.root, img_size=self.config.input_size,train = False, download=True)
 
     # OPTIONAL, called for every GPU/machine (assigning state is OK)
     def setup(self, stage=None):
@@ -24,7 +24,7 @@ class BarlowTwinsCIFAR10DataModule(LightningDataModule):
         # split dataset
         if stage in (None, "fit"):
             self.cifar_train = BarlowTwinsDataset(
-                self.root, img_size=self.config.input_size,train =True
+                self.root, img_size=self.config.input_size,train = True
             )
             self.cifar_val = BarlowTwinsDataset(
                 self.root, img_size=self.config.input_size,train = False
