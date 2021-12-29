@@ -30,23 +30,38 @@ class DINO(LightningModule):
         self.student_backbone = student_backbone
         self.teacher_backbone = teacher_backbone
         
-        try:
-            self.head_in_features = list(self.student_backbone.children())[-1].in_features
-            last_layer_name = list(self.student_backbone.named_children())[-1][0]
-
-            if last_layer_name == 'head':
-                self.student_backbone.head = nn.Identity()
-                self.teacher_backbone.head = nn.Identity()
-            else:
-                self.student_backbone.fc = nn.Identity()
-                self.teacher_backbone.fc = nn.Identity()
-        except:
-            print("student_backbone should be a torchvision resnet model or timm's VIT")
-
+        self.in_features = list(self.encoder.children())[-1].in_features
+        name_classif = list(self.encoder.named_children())[-1][0]
+        self.student_backbone._modules[name_classif] = nn.Identity()
+        self.teacher_backbone._modules[name_classif] = nn.Identity()
         
+        # Make Projector/Head (default: 3-layers)
+        self.proj_channels = config.dino_proj_channels
+        self.out_channels = config.dino_out_channels
+        self.proj_layers = config.dino_proj_layers
+        proj_layers = []
+        for i in range(self.proj_layers):
+            # First Layer
+            if i == 0:
+                proj_layers.append(
+                    nn.Linear(self.head_in_features, self.proj_channels, bias=False)
+                )
+            #Last Layer
+            elif i == self.proj_channels - 1:
+                proj_layers.append(
+                    nn.Linear(self.proj_channels, self.out_channels, bias=False)
+                )
+            # Middle Layer(s)
+            else:
+                proj_layers.append(
+                    nn.Linear(self.proj_channels, self.proj_channels, bias=False)
+                )
+            if i < 2:
+                proj_layers.append(nn.GELU())
+
         #Make head (To be implemented properly after we make the head class)
-        self.student_head = student_head
-        self.teacher_head = teacher_head
+        self.student_head = nn.Sequential(*proj_layers.clone())
+        self.teacher_head = nn.Sequential(*proj_layers.clone())
         
         self.dino_loss = dino_loss
 
