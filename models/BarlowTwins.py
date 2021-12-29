@@ -35,7 +35,7 @@ class BarlowTwins(LightningModule):
         self.proj_channels = config.bt_proj_channels
         proj_layers = []
 
-        for i in range(3):
+        for i in range(self.proj_channels):
             if i == 0:
                 proj_layers.append(
                     nn.Linear(self.in_features, self.proj_channels, bias=False)
