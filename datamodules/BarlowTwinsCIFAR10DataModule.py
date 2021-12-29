@@ -48,6 +48,6 @@ class BarlowTwinsCIFAR10DataModule(LightningDataModule):
             self.cifar_val,
             batch_size=self.batch_size,
             num_workers=self.config.num_workers,
-            shuffle=True,
+            shuffle=False,
         )
         return cifar_val
