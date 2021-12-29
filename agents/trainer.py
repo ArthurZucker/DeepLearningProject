@@ -1,8 +1,7 @@
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, RichProgressBar, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from utils.agent_utils import get_datamodule, get_net
-from utils.callbacks import LogBarlowPredictionsCallback
+from utils.callbacks import LogBarlowPredictionsCallback, LogBarlowCCMatrixCallback
 
 from agents.BaseTrainer import BaseTrainer
 
@@ -11,13 +10,7 @@ class trainer(BaseTrainer):
         super().__init__(config, run)
 
     def run(self):    
-
         super().run()
-
-        # ------------------------
-        # 3 INIT TRAINER
-        # ------------------------
-        # trainer = pl.Trainer.from_argparse_args(self.config)
 
         trainer = pl.Trainer(
             logger=self.wb_run,  # W&B integration
@@ -36,7 +29,7 @@ class trainer(BaseTrainer):
             fast_dev_run=self.config.dev_run,
             # accumulate_grad_batches=self.config.accumulate_size,
             log_every_n_steps=1,
-            limit_train_batches=2
+            # limit_train_batches=10
             # detect_anomaly = True,
         )
         trainer.logger = self.wb_run
