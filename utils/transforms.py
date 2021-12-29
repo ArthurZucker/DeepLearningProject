@@ -61,3 +61,27 @@ class BarlowTwinsTransform(object):
         aug_image2 = transform2(image=base_aug_image2)["image"]
 
         return aug_image1, aug_image2
+
+
+class BarlowTwinsTransformEval(object):
+    """TODO docstring
+    """
+    def __init__(self, img_size) -> None:
+        
+        self.img_size = img_size
+
+    def __call__(self, image):
+        
+        transform = A.Compose([
+            A.Resize(height=self.img_size[0], width=self.img_size[1]),
+            A.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
+            ToTensorV2(),
+            ]
+        )
+
+        aug_image = transform(image=image)["image"]
+
+        return aug_image
