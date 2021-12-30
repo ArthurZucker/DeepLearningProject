@@ -5,7 +5,7 @@ from torch.nn import functional as F
 import numpy as np
 
 class DinoLoss(nn.Module):
-    def __init__(self, network_param): 
+    def __init__(self, network_param, max_epochs): 
         super().__init__()
         
         self.n_crops = network_param.n_crops
@@ -21,7 +21,7 @@ class DinoLoss(nn.Module):
         self.teacher_temp_schedule = np.concatenate((
             np.linspace(network_param.warmup_teacher_temp,
                         self.teacher_temp, network_param.warmup_teacher_temp_epochs),
-            np.ones(network_param.max_epochs - network_param.warmup_teacher_temp_epochs) * self.teacher_temp
+            np.ones(max_epochs - network_param.warmup_teacher_temp_epochs) * self.teacher_temp
         ))
         
     def forward(self, student_out, teacher_out, epoch):

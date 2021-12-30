@@ -20,17 +20,18 @@ class DINO(LightningModule):
 
         self.n_global_crops = network_param.n_global_crops
 
-        # initialize current epoch number
-        self.epoch = 0
-        
-        # initialize loss
-        self.loss = DinoLoss(network_param)
+        # initialize current epoch/iteration 
+        self.curr_epoch = 0
+        self.curr_iteration = 0
         
         # optimizer/scheduler parameters
         self.optim_param = optim_param
         optim_param.scheduler_parameters.epoch = self.trainer.max_epoch
         optim_param.scheduler_parameters.niter_per_ep = len(self.trainer.train_loader)
         self.momentum_schedule = cosine_scheduler(**optim_param.scheduler_parameters)
+        
+        # initialize loss
+        self.loss = DinoLoss(network_param, self.trainer.max_epoch)
 
         # get backbone models 
         self.head_in_features = 0
@@ -95,10 +96,21 @@ class DINO(LightningModule):
 
     def training_step(self, batch, batch_idx):
         '''needs to return a loss from a single batch'''
+        # update iteration parameter
+        self.curr_iteration += 1
         
-        #get only the global crops for the teacher
         loss = self._get_loss(batch)
         
+        # EMA update for the teacher
+        with torch.no_grad():
+            # update momentum according to schedule and curr_iteration 
+            m = self.momentum_schedule[self.curr_iteration] 
+            # update all the teacher's parameters  
+            for param_q, param_k in zip(self.student_backbone.parameters(), self.teacher_backbone.parameters()):
+                param_k.mul_(m).add_((1 - m) * param_q.detach())
+            
+            for param_q, param_k in zip(self.student_head.parameters(), self.teacher_head.parameters()):
+                param_k.mul_(m).add_((1 - m) * param_q.detach())
 
         # Log loss and metric
         self.log('train_loss', loss)
@@ -134,20 +146,11 @@ class DINO(LightningModule):
         '''convenience function since train/valid/test steps are similar'''
         student_out, teacher_out = self(batch)
         
-        loss = self.dino_loss(student_out, teacher_out, self.epoch)
+        loss = self.dino_loss(student_out, teacher_out, self.curr_epoch)
 
         return loss
     
     def on_epoch_end(self):
         # update current epoch
-        self.epoch += 1
-        
-        # EMA update for the teacher
-        with torch.no_grad():
-            m = self.momentum_schedule[self.current_epoch]  # momentum parameter, current_epoch is a valid argument 
-            for param_q, param_k in zip(self.student_backbone.parameters(), self.teacher_backbone.parameters()):
-                param_k.mul_(m).add_((1 - m) * param_q.detach())
-            
-            for param_q, param_k in zip(self.student_head.parameters(), self.teacher_head.parameters()):
-                param_k.mul_(m).add_((1 - m) * param_q.detach())
+        self.curr_epoch += 1
         
