@@ -20,17 +20,19 @@ class DINO(LightningModule):
 
         self.n_global_crops = network_param.n_global_crops
 
+        # initialize current epoch number
+        self.epoch = 0
+        
+        # initialize loss
+        self.loss = DinoLoss(network_param)
+        
+        # optimizer/scheduler parameters
+        self.optim_param = optim_param
         optim_param.scheduler_parameters.epoch = self.trainer.max_epoch
         optim_param.scheduler_parameters.niter_per_ep = len(self.trainer.train_loader)
         self.momentum_schedule = cosine_scheduler(**optim_param.scheduler_parameters)
-        #self.loss = BarlowTwinsLoss
-        self.loss = DinoLoss(network_param.lmbda)
-        
-        # optimizer parameters
-        self.optim_param = optim_param
 
-
-        # get backbone models and adapt them to the self-supervised task
+        # get backbone models 
         self.head_in_features = 0
         self.student_backbone = get_net(
             network_param.student_backbone,network_param
@@ -39,6 +41,7 @@ class DINO(LightningModule):
             network_param.teacher_backbone,network_param
         )
         
+        # Adapt models to the self-supervised task
         self.in_features = list(self.encoder.children())[-1].in_features
         name_classif = list(self.encoder.named_children())[-1][0]
         self.student_backbone._modules[name_classif] = self.teacher_backbone._modules[name_classif] = nn.Identity()
@@ -68,7 +71,7 @@ class DINO(LightningModule):
             if i < 2:
                 proj_layers.append(nn.GELU())
 
-        #Make head (To be implemented properly after we make the head class)
+        #Make heads with same architecture on both networks
         self.student_head = nn.Sequential(*proj_layers.clone())
         self.teacher_head = nn.Sequential(*proj_layers.clone())
         
@@ -131,12 +134,14 @@ class DINO(LightningModule):
         '''convenience function since train/valid/test steps are similar'''
         student_out, teacher_out = self(batch)
         
-        loss = self.dino_loss(student_out, teacher_out)
+        loss = self.dino_loss(student_out, teacher_out, self.epoch)
 
         return loss
     
-    def on_epoch_end(self) -> None:
-
+    def on_epoch_end(self):
+        # update current epoch
+        self.epoch += 1
+        
         # EMA update for the teacher
         with torch.no_grad():
             m = self.momentum_schedule[self.current_epoch]  # momentum parameter, current_epoch is a valid argument 

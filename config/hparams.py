@@ -114,7 +114,12 @@ class DinoConfig:
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.5, 1)
     local_crops_scale: List[float] = list_field(0.08, 0.5)
-
+    max_epochs: int = 200 #Careful, this has to match perfectly with the max_epochs parameter in hparams TODO fix it
+    warmup_teacher_temp_epochs: int = 30 #default 30 
+    student_temp: float = 0.1
+    teacher_temp:float = 0.04   #Default 0.004, can be linearly increased to 0.07 but then it becomes unstable
+    warmup_teacher_temp: float = 0.04 #would be different from techer temp if we used a warmup for this param
+    center_momentum: float = 0.9 #Default 0.9
     scheduler_parameters: Dict[str,Any] = dict_field(base_value=0.996, final_value=1, epochs=0, niter_per_ep=0, warmup_epochs=0, start_warmup_value=0)
 
 @dataclass

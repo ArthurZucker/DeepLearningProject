@@ -5,24 +5,23 @@ from torch.nn import functional as F
 import numpy as np
 
 class DinoLoss(nn.Module):
-    def __init__(self, config): 
+    def __init__(self, network_param): 
         super().__init__()
         
-        self.n_crops = config.n_crops
-        self.n_global_crops = config.n_global_crops
-        self.center_momentum = config.center_momentum
-        self.student_temp = config.student_temp
-        self.teacher_temp = config.teacher_temp
-        
+        self.n_crops = network_param.n_crops
+        self.n_global_crops = network_param.n_global_crops
+        self.center_momentum = network_param.center_momentum
+        self.student_temp = network_param.student_temp
+        self.teacher_temp = network_param.teacher_temp
         #the centering operation requires tu update a buffer of centers
-        self.register_buffer("center", torch.zeros(1, config.out_dim))
+        self.register_buffer("center", torch.zeros(1, network_param.out_dim))
         
         # Without a warmup on the teacher temperature, training becomes unstable
         #To be reviewed and fixed
         self.teacher_temp_schedule = np.concatenate((
-            np.linspace(config.warmup_teacher_temp,
-                        self.teacher_temp, config.warmup_teacher_temp_epochs),
-            np.ones(config.nepochs - config.warmup_teacher_temp_epochs) * self.teacher_temp
+            np.linspace(network_param.warmup_teacher_temp,
+                        self.teacher_temp, network_param.warmup_teacher_temp_epochs),
+            np.ones(network_param.max_epochs - network_param.warmup_teacher_temp_epochs) * self.teacher_temp
         ))
         
     def forward(self, student_out, teacher_out, epoch):
