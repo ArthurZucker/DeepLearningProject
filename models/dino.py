@@ -20,7 +20,9 @@ class DINO(LightningModule):
 
         self.n_global_crops = network_param.n_global_crops
 
-        self.momentum_schedule = cosine_scheduler(optim_param.momentum_teacher, 1, network_param.epochs, len(data_loader))
+        optim_param.scheduler_parameters.epoch = self.trainer.max_epoch
+        optim_param.scheduler_parameters.niter_per_ep = len(self.trainer.train_loader)
+        self.momentum_schedule = cosine_scheduler(**optim_param.scheduler_parameters)
         #self.loss = BarlowTwinsLoss
         self.loss = DinoLoss(network_param.lmbda)
         
@@ -137,7 +139,7 @@ class DINO(LightningModule):
 
         # EMA update for the teacher
         with torch.no_grad():
-            m = self.momentum_schedule[self.epoch]  # momentum parameter
+            m = self.momentum_schedule[self.current_epoch]  # momentum parameter, current_epoch is a valid argument 
             for param_q, param_k in zip(self.student_backbone.parameters(), self.teacher_backbone.parameters()):
                 param_k.mul_(m).add_((1 - m) * param_q.detach())
             

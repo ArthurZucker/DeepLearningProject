@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from typing import List, ClassVar, Optional
+from typing import Dict, List, ClassVar, Optional, Any
 import numpy as np
-from simple_parsing.helpers import list_field, choice
+from simple_parsing.helpers import list_field, choice,dict_field
 import random
+
 import torch
 import torch.optim
 
@@ -25,10 +26,10 @@ class Hparams:
     wandb_project: str = "test-deep-learning"  # name of the project
     wandb_entity: str = "dinow-twins"  # name of the wandb entity, here our team
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
-    arch: str =  "BarlowTwinsFT" #choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
+    arch: str =  "Dino" #choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
     # datamodule to use, for now we only have one dataset, CIFAR10
-    datamodule: str = "BarlowTwinsDataModule"
-    dataset: Optional[str] = "BarlowTwinsDatasetEval"
+    datamodule: str = "DINODataModule"
+    dataset: Optional[str] = "DINODataset"
     agent: str = "trainer"  # agent to use for training
     seed_everything: Optional[int] = None  # seed for the whole run
     input_size: tuple = (32, 32)  # resize coefficients (H,W) for classic transforms
@@ -72,6 +73,11 @@ class OptimizerParams:
     normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
     betas: List[float] = list_field(0.9, 0.999)  # beta1 for adam. default=(0.9, 0.999)
 
+    momentum_teacher: float = 0.996
+    
+    
+    
+    
 
 @dataclass
 class BarlowConfig:
@@ -109,6 +115,7 @@ class DinoConfig:
     global_crops_scale: List[int] = list_field(0.5, 1)
     local_crops_scale: List[float] = list_field(0.08, 0.5)
 
+    scheduler_parameters: Dict[str,Any] = dict_field(base_value=0.996, final_value=1, epochs=0, niter_per_ep=0, warmup_epochs=0, start_warmup_value=0)
 
 @dataclass
 class Parameters:
@@ -129,15 +136,15 @@ class Parameters:
 
         # Set render number of channels
         if "BarlowTwins" in self.hparams.arch :
-            self.network_param: BarlowConfig = (
-                BarlowConfig()
-            )  # TODO later we might need to do something
-            self.data_param: DatasetParams = DatasetParams()
-
+            self.network_param: BarlowConfig = BarlowConfig()
+            
+        elif self.hparams.arch  == "Dino" :
+            self.network_param: DinoConfig = DinoConfig()
         # Set random seed
         if self.hparams.seed_everything is None:
             self.hparams.seed_everything = random.randint(1, 10000)
 
+        self.data_param: DatasetParams = DatasetParams()
         print("Random Seed: ", self.hparams.seed_everything)
         random.seed(self.hparams.seed_everything)
         torch.manual_seed(self.hparams.seed_everything)
