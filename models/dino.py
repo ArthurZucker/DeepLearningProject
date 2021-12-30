@@ -10,19 +10,20 @@ from torch.optim import Adam
 from utils.agent_utils import get_net
 
 from models.losses.dino_loss import DinoLoss
-
+from utils.scheduler import cosine_scheduler
 
 class DINO(LightningModule):
 
-    def __init__(self, network_param,optim_param = None):
+    def __init__(self, network_param, optim_param = None):
         '''method used to define our model parameters'''
         super().__init__()
 
         self.n_global_crops = network_param.n_global_crops
 
-        self.momentum_schedule = network_param.momentum_schedule
+        self.momentum_schedule = cosine_scheduler(optim_param.momentum_teacher, 1, network_param.epochs, len(data_loader))
         #self.loss = BarlowTwinsLoss
         self.loss = DinoLoss(network_param.lmbda)
+        
         # optimizer parameters
         self.optim_param = optim_param
 
@@ -142,5 +143,4 @@ class DINO(LightningModule):
             
             for param_q, param_k in zip(self.student_head.parameters(), self.teacher_head.parameters()):
                 param_k.mul_(m).add_((1 - m) * param_q.detach())
-        
         
