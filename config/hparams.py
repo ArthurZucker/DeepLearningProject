@@ -18,7 +18,7 @@ An example of every datatype is provided. Some of the available arguments are al
 Most notably, the agent, dataset, optimizer and loss can all be specified and automatically parsed
 """
 
-arch_to_datamodule = {"BarlowTwinsFT":"BarlowTwinsCIFAR10Eval","BarlowTwins":"BarlowTwinsCIFAR10DataModule"}
+arch_to_datamodule = {"BarlowTwinsFT":"BarlowTwinsCIFAR10Eval","BarlowTwins":"BarlowTwinsCIFAR10DataModule", "DINO": "DINO"}
 
 @dataclass
 class Hparams:
@@ -28,8 +28,8 @@ class Hparams:
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
     arch: str =  "Dino" #choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
     # datamodule to use, for now we only have one dataset, CIFAR10
-    datamodule: str = "DINODataModule"
-    dataset: Optional[str] = "DINODataset"
+    datamodule: str = "DinoDataModule"
+    dataset: Optional[str] = "DinoDataset"
     agent: str = "trainer"  # agent to use for training
     seed_everything: Optional[int] = None  # seed for the whole run
     input_size: tuple = (32, 32)  # resize coefficients (H,W) for classic transforms
@@ -60,6 +60,15 @@ class DatasetParams:
     batch_size: int = 2048  # batch_size
     asset_path: str = osp.join(os.getcwd(), "assets")  # path to download the dataset
 
+    # Dino params
+    # number of crops/global_crops
+    n_crops: int = 8
+    # number of global crops
+    n_global_crops: int = 2
+    # scale range of the crops
+    global_crops_scale: List[int] = list_field(0.5, 1)
+    local_crops_scale: List[float] = list_field(0.08, 0.5)
+
 
 @dataclass
 class OptimizerParams:
@@ -72,9 +81,8 @@ class OptimizerParams:
     lr_iter: int = 10000  # Learning rate operation iterations
     normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
     betas: List[float] = list_field(0.9, 0.999)  # beta1 for adam. default=(0.9, 0.999)
+    scheduler_parameters: Dict[str, Any] = dict_field(dict(base_value=0.996, final_value=1, max_epochs=0, niter_per_ep=0, warmup_epochs=0, start_warmup_value=0))
 
-    momentum_teacher: float = 0.996
-    
     
     
     
@@ -106,7 +114,11 @@ class DinoConfig:
     """Hyperparameters specific to the DINO Model.
     Used when the `arch` option is set to "Barlow" in the hparams
     """
-
+    student_backbone: str = choice("resnet50", "swinS", default="resnet50")
+    teacher_backbone: str = choice("resnet50", "swinS", default="resnet50")
+    proj_layers: int = 3
+    proj_channels: int = 2048
+    out_channels: int = 256
     # number of crops/global_crops
     n_crops: int = 8
     # number of global crops
@@ -119,8 +131,8 @@ class DinoConfig:
     teacher_temp:float = 0.04   # Default 0.004, can be linearly increased to 0.07 but then it becomes unstable
     warmup_teacher_temp: float = 0.04 # would be different from techer temp if we used a warmup for this param
     center_momentum: float = 0.9 # Default 0.9
-    scheduler_parameters: Dict[str,Any] = dict_field(base_value=0.996, final_value=1, epochs=0, niter_per_ep=0, warmup_epochs=0, start_warmup_value=0)
-
+    max_epochs: int = 200 #This is redundant with the hparms max_epochs
+    #out_dim: int = 256
 @dataclass
 class Parameters:
     """base options."""

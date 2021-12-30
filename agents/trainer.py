@@ -8,7 +8,7 @@ from agents.BaseTrainer import BaseTrainer
 class trainer(BaseTrainer):
     def __init__(self, config, run):
         super().__init__(config, run)
-
+        
     def run(self):    
         super().run()
 
