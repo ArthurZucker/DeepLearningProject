@@ -171,7 +171,7 @@ class DinoTransforms(object):
         
         aug_images.append(transform_global1(image=image)["image"])
         aug_images.append(transform_global2(image=image)["image"])
-        for _ in range(self.n_crops - self.global_crops):
+        for _ in range(self.n_crops - self.n_global_crops):
             aug_images.append(transform_local(image=image)["image"])
 
         return aug_images

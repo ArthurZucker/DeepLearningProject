@@ -26,7 +26,7 @@ class DinoLoss(nn.Module):
         
     def forward(self, student_out, teacher_out, epoch):
         #keep variable for centering
-        teacher_out_center = teacher_out.clone()
+        teacher_out_center = teacher_out.clone().detach()
         
         #Perform sharpening on student's ouput 
         student_out =  student_out / self.student_temp
@@ -43,13 +43,13 @@ class DinoLoss(nn.Module):
         total_loss = 0
         num_losses = 0
         for t_idx, t_out in enumerate(teacher_out):
-            for s_idx, s_out in enumerate(student_out):
+            for s_idx in range(len(student_out)):
                 if t_idx == s_idx:
                     #We don't compute the loss when the image is the same for s and t
                     continue
                 
                 #Sum is over features dimension
-                loss = torch.sum(-t_out * F.log_softmax(s_out, dim=-1), dim=-1)
+                loss = torch.sum(-t_out * F.log_softmax(student_out[s_idx], dim=-1), dim=-1)
                 num_losses += 1
                 #Mean is over batch dimension
                 total_loss += loss.mean()
