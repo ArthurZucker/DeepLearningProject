@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from torch.optim import Adam
 from utils.agent_utils import get_net
 
+from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from models.losses.dino_loss import DinoLoss
 from utils.scheduler import cosine_scheduler
 
@@ -44,22 +45,22 @@ class Dino(LightningModule):
         # Adapt models to the self-supervised task
         self.head_in_features = list(self.student_backbone.children())[-1].in_features
         name_classif = list(self.student_backbone.named_children())[-1][0]
-        self.student_backbone._modules[name_classif] = self.teacher_backbone._modules[name_classif] = nn.Identity()
-        # self.teacher_backbone._modules[name_classif]  = nn.Identity() ^^^^^^^^^ this should also do the same 
+        self.student_backbone._modules[name_classif] =  nn.Identity() #self.teacher_backbone._modules[name_classif] = nn.Identity()
+        self.teacher_backbone._modules[name_classif] = nn.Identity() #^^^^^^^^^ this should also do the same 
         
         # Make Projector/Head (default: 3-layers)
         self.proj_channels = network_param.proj_channels
         self.out_channels = network_param.out_channels
-        self.proj_layers = network_param.proj_layers
+        self.proj_layers_num = network_param.proj_layers
         proj_layers = []
-        for i in range(self.proj_layers):
+        for i in range(self.proj_layers_num):
             # First Layer
             if i == 0:
                 proj_layers.append(
                     nn.Linear(self.head_in_features, self.proj_channels, bias=True)
                 )
             #Last Layer
-            elif i == self.proj_channels - 1:
+            elif i == self.proj_layers_num - 1:
                 proj_layers.append(
                     nn.Linear(self.proj_channels, self.out_channels, bias=True)
                 )
@@ -72,9 +73,24 @@ class Dino(LightningModule):
                 proj_layers.append(nn.GELU())
 
         #Make heads with same architecture on both networks
-        self.student_head = nn.Sequential(*proj_layers)
-        self.teacher_head = nn.Sequential(*proj_layers)
-        
+        self.student_head = nn.Sequential(
+            nn.Linear(self.head_in_features, self.proj_channels, bias=True),
+            nn.GELU(),
+            nn.Linear(self.proj_channels, self.proj_channels, bias=True),
+            nn.GELU(),
+            nn.Linear(self.proj_channels, self.out_channels, bias=True)
+        )#nn.Sequential(*proj_layers.copy())
+        self.teacher_head = nn.Sequential(
+            nn.Linear(self.head_in_features, self.proj_channels, bias=True),
+            nn.GELU(),
+            nn.Linear(self.proj_channels, self.proj_channels, bias=True),
+            nn.GELU(),
+            nn.Linear(self.proj_channels, self.out_channels, bias=True)
+        )#nn.Sequential(*proj_layers.copy())
+
+        # teacher does not require gradient
+        self.teacher_backbone.requires_grad_(False)
+        self.teacher_head.requires_grad_(False)
 
     def forward(self, crops):
         
@@ -112,7 +128,7 @@ class Dino(LightningModule):
                 param_k.mul_(m).add_((1 - m) * param_q.detach())
 
         # Log loss and metric
-        self.log('train_loss', loss)
+        self.log('train/loss', loss)
 
         return loss
 
@@ -121,7 +137,7 @@ class Dino(LightningModule):
         loss = self._get_loss(batch)
 
         # Log loss and metric
-        self.log('val_loss', loss)
+        self.log('val/loss', loss)
 
         return loss
 
@@ -130,26 +146,26 @@ class Dino(LightningModule):
         loss = self._get_loss(batch)
 
         # Log loss and metric
-        self.log('test_loss', loss)
+        self.log('test/loss', loss)
     
     def configure_optimizers(self):
         '''defines model optimizer'''
         optimizer = getattr(torch.optim,self.optim_param.optimizer)
-        optimizer = optimizer(self.parameters(), lr=self.optim_param.lr)
+        optimizer = optimizer(self.parameters(), lr=self.optim_param.lr * self.trainer.datamodule.batch_size / 256 )
 
         self.optim_param.scheduler_parameters['max_epochs'] = self.trainer.max_epochs
         self.optim_param.scheduler_parameters['niter_per_ep'] = len(self.trainer.datamodule.train_dataloader())
         self.momentum_schedule = cosine_scheduler(**self.optim_param.scheduler_parameters)
-        # scheduler = LinearWarmupCosineAnnealingLR(
-        #     optimizer, warmup_epochs=5, max_epochs=40
-        # )
-        return optimizer
+        scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer, warmup_epochs=5, max_epochs=40
+        )
+        return [[optimizer],[scheduler]]
     
     def _get_loss(self, batch):
         '''convenience function since train/valid/test steps are similar'''
         student_out, teacher_out = self(batch)
         
-        loss = self.dino_loss(student_out, teacher_out, self.current_epoch)
+        loss = self.loss(student_out, teacher_out, self.current_epoch)
 
         return loss
     
