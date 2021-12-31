@@ -39,7 +39,7 @@ class Hparams:
     precision: int = 32  # precision
     val_freq: int = 1  # validation frequency
     dev_run: bool = False  # developpment mode, only run 1 batch of train val and test
-    accumulate_size: int = 2048  # gradient accumulation batch size
+    accumulate_size: int = 1024  # gradient accumulation batch size
     # maximum number of epochs
     max_epochs: int = 200
     # path to download pascal voc
@@ -57,7 +57,7 @@ class DatasetParams:
     # Image size, assumes square images
     num_workers: int = 20  # number of workers for dataloadersint
     input_size: tuple = (32, 32)  # image_size
-    batch_size: int = 2048  # batch_size
+    batch_size: int = 256  # batch_size
     asset_path: str = osp.join(os.getcwd(), "assets")  # path to download the dataset
 
     # Dino params
@@ -74,7 +74,7 @@ class DatasetParams:
 class OptimizerParams:
     """Optimization parameters"""
 
-    optimizer: str = "Adam"  # Optimizer (adam, rmsprop)
+    optimizer: str = "AdamW"  # Optimizer (adam, rmsprop)
     lr: float = 3e-4  # learning rate, default=0.0002
     lr_sched_type: str = "step"  # Learning rate scheduler type.
     z_lr_sched_step: int = 100000  # Learning rate schedule for z.
@@ -124,8 +124,8 @@ class DinoConfig:
     # number of global crops
     n_global_crops: int = 2
     # scale range of the crops
-    global_crops_scale: List[int] = list_field(0.5, 1)
-    local_crops_scale: List[float] = list_field(0.08, 0.5)
+    global_crops_scale: List[int] = list_field(0.4, 1)
+    local_crops_scale: List[float] = list_field(0.05, 0.4)
     warmup_teacher_temp_epochs: int = 30 # Default 30 
     student_temp: float = 0.1
     teacher_temp:float = 0.04   # Default 0.004, can be linearly increased to 0.07 but then it becomes unstable
