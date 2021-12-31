@@ -155,3 +155,62 @@ class LogMetricsCallBack(Callback):
         """Called when the validation epoch ends."""
 
         self.metrics_val.log_metrics("val")
+
+
+class LogDinoImagesCallback(Callback):
+    def __init__(self,log_pred_freq) -> None:
+        super().__init__()
+        self.log_pred_freq = log_pred_freq
+
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+        # Let's log 20 sample image predictions from first batch
+        if batch_idx == 0 and pl_module.current_epoch % self.log_pred_freq == 0:
+            self.log_images("train", batch)
+
+    def on_validation_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+
+        # Let's log 20 sample image predictions from first batch
+        if batch_idx == 0 and pl_module.current_epoch % self.log_pred_freq == 0:
+            self.log_images("val", batch)
+
+
+    def log_images(self, name, batch):
+
+        augmented_images = [i[0].cpu().detach().numpy() for i in batch]
+        full_st_output       = augmented_images
+        full_teacher_output  = augmented_images[:2]
+        
+
+        samples1 = []
+        samples2 = []
+        mean = np.array([0.485, 0.456, 0.406])  # TODO this is not beautiful
+        std = np.array([0.229, 0.224, 0.225])
+
+        samples1 = []
+        samples2 = []
+        for j in range(len(full_st_output)):
+
+            bg1 = full_st_output[j].transpose((1, 2, 0))
+            bg1 = std * bg1 + mean
+            bg1 = np.clip(bg1, 0, 1)
+            samples1.append(wandb.Image(bg1))
+
+            if j<2: 
+                bg2 =full_teacher_output[j].transpose((1, 2, 0))
+                bg2 = std * bg2 + mean
+                bg2 = np.clip(bg2, 0, 1)
+                samples2.append(wandb.Image(bg2))
+
+        wandb.log({f"{name}/Teacher images": samples2})
+        wandb.log({f"{name}/Student images": samples1})
+
+        del bg1, bg2,samples1,samples2
+
+class LogAttentionMapsCallback(Callback):
+    pass
