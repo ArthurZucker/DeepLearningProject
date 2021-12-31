@@ -34,12 +34,12 @@ class DinoDataModule(LightningDataModule):
             self.cifar_train = self.dataset(
                 root = self.root, img_size = self.config.input_size, n_crops = self.config.n_crops, 
                 n_global_crops = self.config.n_global_crops, local_crops_scale = self.config.local_crops_scale, 
-                global_crops_scale = self.config.global_crops_scale, train = True, download=True
+                global_crops_scale = self.config.global_crops_scale, train = True, download=False
             )
             self.cifar_val = self.dataset(
                 root = self.root, img_size = self.config.input_size, n_crops = self.config.n_crops, 
                 n_global_crops = self.config.n_global_crops, local_crops_scale = self.config.local_crops_scale, 
-                global_crops_scale = self.config.global_crops_scale, train = False, download=True
+                global_crops_scale = self.config.global_crops_scale, train = False, download=False
             )
 
     def train_dataloader(self):
