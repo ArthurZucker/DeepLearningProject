@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, RichProgressBar, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from utils.callbacks import LogBarlowPredictionsCallback, LogBarlowCCMatrixCallback, LogMetricsCallBack, LogDinoImagesCallback
+from utils.callbacks import LogBarlowPredictionsCallback, LogBarlowCCMatrixCallback, LogMetricsCallBack, LogDinoImagesCallback,LogDinoDistribCallback
 
 from agents.BaseTrainer import BaseTrainer
 
@@ -19,6 +19,7 @@ class trainer(BaseTrainer):
                 RichProgressBar(),
                 LearningRateMonitor(),
                 LogDinoImagesCallback(self.config.log_pred_freq),
+                LogDinoDistribCallback(self.config.log_dino_freq)
                 # LogMetricsCallBack(),
                 # LogBarlowPredictionsCallback(self.config.log_pred_freq) , # FIXME only add these if we are using barlow
                 # LogBarlowCCMatrixCallback(self.config.log_ccM_freq) # FIXME memory error had to remove it
@@ -31,8 +32,8 @@ class trainer(BaseTrainer):
             fast_dev_run=self.config.dev_run,
             # accumulate_grad_batches=self.config.accumulate_size,
             log_every_n_steps=1,
-            # limit_train_batches=10
-            detect_anomaly = True,
+            # limit_train_batches=4,
+            # detect_anomaly = True,
         )
         trainer.logger = self.wb_run
         trainer.fit(self.model, datamodule=self.datamodule)

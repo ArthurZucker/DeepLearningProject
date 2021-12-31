@@ -157,7 +157,7 @@ class Dino(LightningModule):
         self.optim_param.scheduler_parameters['niter_per_ep'] = len(self.trainer.datamodule.train_dataloader())
         self.momentum_schedule = cosine_scheduler(**self.optim_param.scheduler_parameters)
         scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer, warmup_epochs=5, max_epochs=40
+            optimizer, warmup_epochs=10, max_epochs=40,warmup_start_lr=0.005
         )
         return [[optimizer],[scheduler]]
     

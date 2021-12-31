@@ -39,6 +39,7 @@ class DinoLoss(nn.Module):
         student_out = student_out.chunk(self.n_crops)
         teacher_out = teacher_out.chunk(self.n_global_crops)
         
+        self.student_distrib = np.array([torch.softmax(student_out[i], dim =-1).detach().cpu().numpy() for i in range(len(student_out))])
         #Here we have one output per image 
         total_loss = 0
         num_losses = 0

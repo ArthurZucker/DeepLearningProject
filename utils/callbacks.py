@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+
+
 from utils.metrics import MetricsModule
 class LogBarlowPredictionsCallback(Callback):
     def __init__(self,log_pred_freq) -> None:
@@ -211,6 +213,64 @@ class LogDinoImagesCallback(Callback):
         wandb.log({f"{name}/Student images": samples1})
 
         del bg1, bg2,samples1,samples2
+
+class LogDinoDistribCallback(Callback):
+    """Logs the cross correlation matrix obtain 
+    when computing the loss. This gives us an idea of 
+    how the network learns. 
+    TODO : when should we log ? 
+    TODO : should we average over batches only? Or epoch? 
+    For now, the average over the epoch will be computed
+    as a moving average. 
+    A hook should be registered on the loss, using a new argument in the loss 
+    loss.cc_M which will be stored each time and then deleted
+    
+    """
+    def __init__(self,log_student_distrib) -> None:
+        super().__init__()
+        self.log_freq = log_student_distrib
+        self.student_distrib  = None
+
+
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+        # Let's log 20 sample image predictions from first batch
+        stud = pl_module.loss.student_distrib
+        if self.student_distrib is not None : 
+            # take the mean over the batches to output the approximate
+            self.student_distrib += (np.mean(stud,axis=(0,1)) - self.student_distrib)/(batch_idx+1) 
+        else: 
+            self.student_distrib =  np.mean(stud,axis=(0,1)) 
+        del stud
+
+        if batch_idx == 0 and pl_module.current_epoch % self.log_freq == 0:
+            self.log_student_distrib("train")
+
+    def on_val_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+        # Let's log 20 sample image predictions from first batch
+        pass
+
+    def log_student_distrib(self,name):
+        histogram = self.student_distrib
+        sns.set_style("darkgrid")
+        sns.displot(histogram, kde=True)
+        plt.title(f"dino output distribution")
+        wandb.log({f"Student Output/{name} distrib" : (wandb.Image(plt))})
+        plt.close()
+        
+
+        sns.lineplot(x = np.arange(len(histogram)),y = histogram)
+        plt.title(f"dino output (softmaxed)")
+        wandb.log({f"Student Output/{name} fct" : (wandb.Image(plt))})
+        plt.close()
+
+        self.student_distrib = None
+
 
 class LogAttentionMapsCallback(Callback):
     pass

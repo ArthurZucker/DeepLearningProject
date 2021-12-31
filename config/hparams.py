@@ -48,6 +48,8 @@ class Hparams:
     log_pred_freq: int = 10
     # log cc_M matrix frequency
     log_ccM_freq: int = 1
+    # log output frrequency for dino 
+    log_dino_freq: int = 1
 
 
 @dataclass
@@ -81,7 +83,7 @@ class OptimizerParams:
     lr_iter: int = 10000  # Learning rate operation iterations
     normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
     betas: List[float] = list_field(0.9, 0.999)  # beta1 for adam. default=(0.9, 0.999)
-    scheduler_parameters: Dict[str, Any] = dict_field(dict(base_value=0.996, final_value=1, max_epochs=0, niter_per_ep=0, warmup_epochs=0, start_warmup_value=0))
+    scheduler_parameters: Dict[str, Any] = dict_field(dict(base_value=0.9995, final_value=1, max_epochs=0, niter_per_ep=0, warmup_epochs=0, start_warmup_value=0))
 
     
     
@@ -118,7 +120,7 @@ class DinoConfig:
     teacher_backbone: str = choice("resnet50", "swinS", default="resnet50")
     proj_layers: int = 3
     proj_channels: int = 2048
-    out_channels: int = 256
+    out_channels: int = 2048
     # number of crops/global_crops
     n_crops: int = 8
     # number of global crops
@@ -126,9 +128,9 @@ class DinoConfig:
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.4, 1)
     local_crops_scale: List[float] = list_field(0.05, 0.4)
-    warmup_teacher_temp_epochs: int = 30 # Default 30 
+    warmup_teacher_temp_epochs: int = 10 # Default 30 
     student_temp: float = 0.1
-    teacher_temp:float = 0.04   # Default 0.004, can be linearly increased to 0.07 but then it becomes unstable
+    teacher_temp:float = 0.07   # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
     warmup_teacher_temp: float = 0.04 # would be different from techer temp if we used a warmup for this param
     center_momentum: float = 0.9 # Default 0.9
     max_epochs: int = 200 #This is redundant with the hparms max_epochs
