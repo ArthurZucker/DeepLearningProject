@@ -13,6 +13,8 @@ from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from models.losses.dino_loss import DinoLoss
 from utils.scheduler import cosine_scheduler
 
+from models.custom_layers.l2norm import L2Norm
+
 class Dino(LightningModule):
 
     def __init__(self, network_param, optim_param = None):
@@ -52,6 +54,7 @@ class Dino(LightningModule):
         self.proj_channels = network_param.proj_channels
         self.out_channels = network_param.out_channels
         self.proj_layers_num = network_param.proj_layers
+        self.bottleneck_dim = network_param.bottleneck_dim
         proj_layers = []
         for i in range(self.proj_layers_num):
             # First Layer
@@ -76,21 +79,24 @@ class Dino(LightningModule):
         self.student_head = nn.Sequential(
             nn.Linear(self.head_in_features, self.proj_channels, bias=True),
             nn.GELU(),
-            nn.Linear(self.proj_channels, self.proj_channels, bias=True),
-            nn.GELU(),
-            nn.Linear(self.proj_channels, self.out_channels, bias=True)
+            nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
+            L2Norm(),
+            nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
         )#nn.Sequential(*proj_layers.copy())
         self.teacher_head = nn.Sequential(
             nn.Linear(self.head_in_features, self.proj_channels, bias=True),
             nn.GELU(),
-            nn.Linear(self.proj_channels, self.proj_channels, bias=True),
-            nn.GELU(),
-            nn.Linear(self.proj_channels, self.out_channels, bias=True)
+            nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
+            L2Norm(),
+            nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
         )#nn.Sequential(*proj_layers.copy())
 
         # teacher does not require gradient
         self.teacher_backbone.requires_grad_(False)
         self.teacher_head.requires_grad_(False)
+
+        self.teacher_backbone.load_state_dict(self.student_backbone.state_dict())
+        self.teacher_head.load_state_dict(self.student_head.state_dict())
 
     def forward(self, crops):
         
