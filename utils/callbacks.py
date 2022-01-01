@@ -170,7 +170,8 @@ class LogDinoImagesCallback(Callback):
         """Called when the training batch ends."""
         # Let's log 20 sample image predictions from first batch
         if batch_idx == 0 and pl_module.current_epoch % self.log_pred_freq == 0:
-            self.log_images("train", batch)
+            self.loss = pl_module.loss
+            self.log_images("train", batch,outputs)
 
     def on_validation_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
@@ -179,20 +180,20 @@ class LogDinoImagesCallback(Callback):
 
         # Let's log 20 sample image predictions from first batch
         if batch_idx == 0 and pl_module.current_epoch % self.log_pred_freq == 0:
-            self.log_images("val", batch)
+            self.loss = pl_module.loss
+            self.log_images("val", batch,outputs)
 
 
-    def log_images(self, name, batch):
+    def log_images(self, name, batch, outputs):
 
+        # retrieve 1 sample of the 8 crops
         augmented_images = [i[0].cpu().detach().numpy() for i in batch]
         full_st_output       = augmented_images
         full_teacher_output  = augmented_images[:2]
-        
-
         samples1 = []
         samples2 = []
         mean = np.array([0.485, 0.456, 0.406])  # TODO this is not beautiful
-        std = np.array([0.229, 0.224, 0.225])
+        std  = np.array([0.229, 0.224, 0.225])
 
         samples1 = []
         samples2 = []
@@ -209,10 +210,40 @@ class LogDinoImagesCallback(Callback):
                 bg2 = np.clip(bg2, 0, 1)
                 samples2.append(wandb.Image(bg2))
 
-        wandb.log({f"{name}/Teacher images": samples2})
-        wandb.log({f"{name}/Student images": samples1})
-
+        self.generate_distrib_plot(samples1,samples2)
+        wandb.log({f"Student images/{name}": samples1})
+        wandb.log({f"Teacher images/{name}": samples2})
         del bg1, bg2,samples1,samples2
+
+    def generate_distrib_plot(self, samples1, samples2):
+        stud  = [i[0] for i in self.loss.student_distrib]
+        teach = [i[0] for i in self.loss.teacher_distrib]
+
+        sns.set_style("darkgrid")
+        for j in range(len(stud)):
+            sns.displot(stud[j], kde=True)
+            bg1 = wandb.Image(plt)
+            samples1.append(wandb.Image(bg1))
+            plt.close()
+
+            if j<2: 
+                sns.displot(teach[j], kde=True)
+                bg2 = wandb.Image(plt)
+                samples2.append(wandb.Image(bg2))
+                plt.close()
+
+        for j in range(len(stud)):
+            sns.lineplot(x = np.arange(len(stud[j])), y = stud[j])
+            bg1 = wandb.Image(plt)
+            samples1.append(wandb.Image(bg1))
+            plt.close()
+
+            if j<2: 
+                sns.lineplot(x = np.arange(len(teach[j])), y = teach[j])
+                bg2 = wandb.Image(plt)
+                samples2.append(wandb.Image(bg2))
+                plt.close()
+
 
 class LogDinoDistribCallback(Callback):
     """Logs the cross correlation matrix obtain 
@@ -230,14 +261,15 @@ class LogDinoDistribCallback(Callback):
         super().__init__()
         self.log_freq = log_student_distrib
         self.student_distrib  = None
-
+        self.teacher_distrib  = None
 
     def on_train_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
         """Called when the training batch ends."""
         # Let's log 20 sample image predictions from first batch
-        stud = pl_module.loss.student_distrib
+        stud  = pl_module.loss.student_distrib
+        teach = pl_module.loss.teacher_distrib
         if self.student_distrib is not None : 
             # take the mean over the batches to output the approximate
             self.student_distrib += (np.mean(stud,axis=(0,1)) - self.student_distrib)/(batch_idx+1) 
@@ -245,8 +277,16 @@ class LogDinoDistribCallback(Callback):
             self.student_distrib =  np.mean(stud,axis=(0,1)) 
         del stud
 
+        if self.teacher_distrib is not None : 
+            # take the mean over the batches to output the approximate
+            self.teacher_distrib += (np.mean(teach,axis=(0,1)) - self.teacher_distrib)/(batch_idx+1) 
+        else: 
+            self.teacher_distrib =  np.mean(teach,axis=(0,1)) 
+        del teach
+
         if batch_idx == 0 and pl_module.current_epoch % self.log_freq == 0:
-            self.log_student_distrib("train")
+            self.log_distrib(self.student_distrib,"student train")
+            self.log_distrib(self.teacher_distrib,"teacher train")
 
     def on_val_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
@@ -255,18 +295,18 @@ class LogDinoDistribCallback(Callback):
         # Let's log 20 sample image predictions from first batch
         pass
 
-    def log_student_distrib(self,name):
-        histogram = self.student_distrib
+    def log_distrib(self, histogram, name):
+        
         sns.set_style("darkgrid")
         sns.displot(histogram, kde=True)
         plt.title(f"dino output distribution")
-        wandb.log({f"Student Output/{name} distrib" : (wandb.Image(plt))})
+        wandb.log({f"Dino Output/{name} distrib" : (wandb.Image(plt))})
         plt.close()
         
 
         sns.lineplot(x = np.arange(len(histogram)),y = histogram)
         plt.title(f"dino output (softmaxed)")
-        wandb.log({f"Student Output/{name} fct" : (wandb.Image(plt))})
+        wandb.log({f"Dino Output/{name} fct" : (wandb.Image(plt))})
         plt.close()
 
         self.student_distrib = None
