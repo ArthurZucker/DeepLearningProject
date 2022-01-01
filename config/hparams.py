@@ -136,8 +136,8 @@ class DinoConfig:
     # number of global crops
     n_global_crops: int = 2
     # scale range of the crops
-    global_crops_scale: List[int] = list_field(0.4, 1)
-    local_crops_scale: List[float] = list_field(0.05, 0.4)
+    global_crops_scale: List[int] = list_field(0.5, 1)
+    local_crops_scale: List[float] = list_field(0.08, 0.5)
     warmup_teacher_temp_epochs: int = 10  # Default 30
     student_temp: float = 0.1
     teacher_temp: float = 0.04  # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
