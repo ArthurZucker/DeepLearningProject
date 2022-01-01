@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, ClassVar, Optional, Any
 import numpy as np
-from simple_parsing.helpers import list_field, choice,dict_field
+from simple_parsing.helpers import list_field, choice, dict_field
 import random
 
 import torch
@@ -18,15 +18,14 @@ An example of every datatype is provided. Some of the available arguments are al
 Most notably, the agent, dataset, optimizer and loss can all be specified and automatically parsed
 """
 
-arch_to_datamodule = {"BarlowTwinsFT":"BarlowTwinsCIFAR10Eval","BarlowTwins":"BarlowTwinsCIFAR10DataModule", "DINO": "DINO"}
-
 @dataclass
 class Hparams:
     """Hyperparameters of Your Model"""
+
     wandb_project: str = "test-deep-learning"  # name of the project
     wandb_entity: str = "dinow-twins"  # name of the wandb entity, here our team
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
-    arch: str =  "Dino" #choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
+    arch: str = "Dino"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
     # datamodule to use, for now we only have one dataset, CIFAR10
     datamodule: str = "DinoDataModule"
     dataset: Optional[str] = "DinoDataset"
@@ -48,7 +47,7 @@ class Hparams:
     log_pred_freq: int = 10
     # log cc_M matrix frequency
     log_ccM_freq: int = 1
-    # log output frrequency for dino 
+    # log output frrequency for dino
     log_dino_freq: int = 1
 
 
@@ -76,18 +75,24 @@ class DatasetParams:
 class OptimizerParams:
     """Optimization parameters"""
 
-    optimizer: str = "AdamW"  # Optimizer (adam, rmsprop)
+    optimizer: str = "Adam"  # Optimizer (adam, rmsprop)
     lr: float = 3e-4  # learning rate, default=0.0002
     lr_sched_type: str = "step"  # Learning rate scheduler type.
     z_lr_sched_step: int = 100000  # Learning rate schedule for z.
     lr_iter: int = 10000  # Learning rate operation iterations
     normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
     betas: List[float] = list_field(0.9, 0.999)  # beta1 for adam. default=(0.9, 0.999)
-    scheduler_parameters: Dict[str, Any] = dict_field(dict(base_value=0.9995, final_value=1, max_epochs=0, niter_per_ep=0, warmup_epochs=0, start_warmup_value=0))
+    scheduler_parameters: Dict[str, Any] = dict_field(
+        dict(
+            base_value=0.9995,
+            final_value=1,
+            max_epochs=0,
+            niter_per_ep=0,
+            warmup_epochs=0,
+            start_warmup_value=0,
+        )
+    )
 
-    
-    
-    
 
 @dataclass
 class BarlowConfig:
@@ -106,9 +111,12 @@ class BarlowConfig:
     pretrained_encoder: bool = False
 
     # number of classes to use for the fine tuning task
-    num_cat: int = 10 
+    num_cat: int = 10
     # model checkpoint used in classification fine tuning
-    weight_checkpoint : Optional[str] = osp.join(os.getcwd(), "wandb/test-deep-learning/lebgzheo/checkpoints/epoch=189-step=4749.ckpt")
+    weight_checkpoint: Optional[str] = osp.join(
+        os.getcwd(),
+        "wandb/test-deep-learning/lebgzheo/checkpoints/epoch=189-step=4749.ckpt",
+    )
 
 
 @dataclass
@@ -116,11 +124,13 @@ class DinoConfig:
     """Hyperparameters specific to the DINO Model.
     Used when the `arch` option is set to "Barlow" in the hparams
     """
+
     student_backbone: str = choice("resnet50", "swinS", default="resnet50")
     teacher_backbone: str = choice("resnet50", "swinS", default="resnet50")
     proj_layers: int = 3
     proj_channels: int = 2048
-    out_channels: int = 2048
+    bottleneck_dim: int = 256
+    out_channels: int = 4096
     # number of crops/global_crops
     n_crops: int = 8
     # number of global crops
@@ -128,13 +138,22 @@ class DinoConfig:
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.4, 1)
     local_crops_scale: List[float] = list_field(0.05, 0.4)
-    warmup_teacher_temp_epochs: int = 10 # Default 30 
+    warmup_teacher_temp_epochs: int = 10  # Default 30
     student_temp: float = 0.1
-    teacher_temp:float = 0.07   # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
-    warmup_teacher_temp: float = 0.04 # would be different from techer temp if we used a warmup for this param
-    center_momentum: float = 0.9 # Default 0.9
-    max_epochs: int = 200 #This is redundant with the hparms max_epochs
-    #out_dim: int = 256
+    teacher_temp: float = 0.04  # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
+    warmup_teacher_temp: float = (
+        0.04  # would be different from techer temp if we used a warmup for this param
+    )
+    center_momentum: float = 0.9  # Default 0.9
+    max_epochs: int = 200  # This is redundant with the hparms max_epochs
+    # out_dim: int = 256
+    # checkpoint
+    weight_checkpoint: Optional[str] = osp.join(
+        os.getcwd(),
+        "wandb/test-deep-learning/2gldaf6e/checkpoints/epoch=0-step=195.ckpt",
+    )
+
+
 @dataclass
 class Parameters:
     """base options."""
@@ -145,7 +164,7 @@ class Parameters:
     # optimizer: OptimizerParams = OptimizerParams()
     # GAN Settings
     hparams: Hparams = Hparams()
-    optim_param: OptimizerParams = OptimizerParams() 
+    optim_param: OptimizerParams = OptimizerParams()
 
     def __post_init__(self):
         """Post-initialization code"""
@@ -153,10 +172,10 @@ class Parameters:
         # since we will use different models, backbones and datamodules
 
         # Set render number of channels
-        if "BarlowTwins" in self.hparams.arch :
+        if "BarlowTwins" in self.hparams.arch:
             self.network_param: BarlowConfig = BarlowConfig()
-            
-        elif self.hparams.arch  == "Dino" :
+
+        elif self.hparams.arch == "Dino":
             self.network_param: DinoConfig = DinoConfig()
         # Set random seed
         if self.hparams.seed_everything is None:
