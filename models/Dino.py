@@ -48,7 +48,7 @@ class Dino(LightningModule):
         # Adapt models to the self-supervised task
         self.head_in_features = list(self.student_backbone.modules())[-1].in_features
         name_classif = list(self.student_backbone.named_children())[-1][0]
-        self.student_backbone._modules[name_classif] =  nn.Identity() #self.teacher_backbone._modules[name_classif] = nn.Identity()
+        self.student_backbone._modules[name_classif] = nn.Identity() #self.teacher_backbone._modules[name_classif] = nn.Identity()
         self.teacher_backbone._modules[name_classif] = nn.Identity() #^^^^^^^^^ this should also do the same 
         
         # Make Projector/Head (default: 3-layers)
@@ -57,24 +57,24 @@ class Dino(LightningModule):
         self.proj_layers_num = network_param.proj_layers
         self.bottleneck_dim = network_param.bottleneck_dim
         
-        self.student_head = nn.Sequential(
-            nn.Linear(self.head_in_features, self.proj_channels, bias=True),
-            nn.GELU(),
-            nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
-            L2Norm(),
-            nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
-        )#nn.Sequential(*proj_layers.copy())
-        self.teacher_head = nn.Sequential(
-            nn.Linear(self.head_in_features, self.proj_channels, bias=True),
-            nn.GELU(),
-            nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
-            L2Norm(),
-            nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
-        )
+        # self.student_head = nn.Sequential(
+        #     nn.Linear(self.head_in_features, self.proj_channels, bias=True),
+        #     nn.GELU(),
+        #     nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
+        #     L2Norm(),
+        #     nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
+        # )#nn.Sequential(*proj_layers.copy())
+        # self.teacher_head = nn.Sequential(
+        #     nn.Linear(self.head_in_features, self.proj_channels, bias=True),
+        #     nn.GELU(),
+        #     nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
+        #     L2Norm(),
+        #     nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
+        # )
 
         #Make heads with same architecture on both networks
-        # self.student_head = self._get_head()
-        # self.teacher_head = self._get_head()
+        self.student_head = self._get_head()
+        self.teacher_head = self._get_head()
 
         # teacher does not require gradient
         self.teacher_backbone.requires_grad_(False)
@@ -162,11 +162,11 @@ class Dino(LightningModule):
     
     def _get_head(self):
         # first layer 
-        proj_layers = [nn.Linear(self.head_in_features, self.proj_channels),nn.GELU()]
-        for i in range(self.proj_layers_num-2):
-            proj_layers.append(nn.Linear(self.proj_channels, self.proj_channels))
+        proj_layers = [nn.Linear(self.head_in_features, self.proj_channels)]
+        for i in range(self.proj_layers_num-3):
             proj_layers.append(nn.GELU())
-        proj_layers += [nn.Linear(self.proj_channels, self.bottleneck_dim),nn.GELU()]
+            proj_layers.append(nn.Linear(self.proj_channels, self.proj_channels))
+        proj_layers += [nn.GELU(),nn.Linear(self.proj_channels, self.bottleneck_dim)]
         # last layer 
         proj_layers += [L2Norm(),nn.Linear(self.bottleneck_dim, self.out_channels, bias=False)]
 

@@ -4,7 +4,7 @@ import torch
 
 #torch dataset library
 from torch.utils.data import Dataset
-from utils.transforms import BarlowTwinsTransform, BarlowTwinsTransformEval
+from utils.transforms import BarlowTwinsTransform, TransformEval
 from torchvision.datasets import CIFAR10
 from PIL import Image
 
@@ -26,7 +26,7 @@ class BarlowTwinsDataset(CIFAR10):
 class BarlowTwinsDatasetEval(CIFAR10):
     def __init__(self, root, img_size, train,download = False):
         super().__init__(root=root, train = train, download = download)
-        self.transform = BarlowTwinsTransformEval(img_size)
+        self.transform = TransformEval(img_size)
 
     def __getitem__(self, idx):
         image = Image.fromarray(self.data[idx]) # FIXME Image.fromarray might not be needed
