@@ -63,7 +63,7 @@ class BarlowTwinsTransform(object):
         return aug_image1, aug_image2
 
 
-class BarlowTwinsTransformEval(object):
+class TransformEval(object):
     """TODO docstring
     """
     def __init__(self, img_size) -> None:

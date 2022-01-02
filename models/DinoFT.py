@@ -7,7 +7,7 @@ import torch
 from models.Dino import Dino
 from utils.agent_utils import get_net
 
-class BarlowTwinsFT(LightningModule):
+class DinoFT(LightningModule):
     def __init__(self, network_param, optim_param):
         """method used to define our model parameters
         Args: BarlowConfig : config = network parameters to use. 
@@ -23,11 +23,11 @@ class BarlowTwinsFT(LightningModule):
         self.optim_param = optim_param
 
         # Model
-        self.pretrained_dino = Dino(network_param) #BarlowTwins(network_param)
+        self.pretrained_dino = Dino(network_param,optim_param) #BarlowTwins(network_param)
         if network_param.weight_checkpoint is not None: 
             self.pretrained_dino.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
         
-        self.head_out_features = list(self.pretrained_dino.student_backbone.children())[-1].out_features
+        self.head_out_features = list(self.pretrained_dino.student_head.children())[-1].out_features
         self.pretrained_dino.requires_grad_(False)        
         self.linear = nn.Linear(self.head_out_features, self.num_cat)
 
