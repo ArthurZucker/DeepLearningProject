@@ -38,14 +38,15 @@ class Dino(LightningModule):
         # get backbone models 
         self.head_in_features = 0
         self.student_backbone = get_net(
-            network_param.student_backbone,network_param
+            network_param.student_backbone,network_param.backbone_parameters
         )
         self.teacher_backbone = get_net(
-            network_param.teacher_backbone,network_param
+            network_param.teacher_backbone,network_param.backbone_parameters
         )
+        
 
         # Adapt models to the self-supervised task
-        self.head_in_features = list(self.student_backbone.children())[-1].in_features
+        self.head_in_features = list(self.student_backbone.modules())[-1].in_features
         name_classif = list(self.student_backbone.named_children())[-1][0]
         self.student_backbone._modules[name_classif] =  nn.Identity() #self.teacher_backbone._modules[name_classif] = nn.Identity()
         self.teacher_backbone._modules[name_classif] = nn.Identity() #^^^^^^^^^ this should also do the same 
@@ -56,9 +57,24 @@ class Dino(LightningModule):
         self.proj_layers_num = network_param.proj_layers
         self.bottleneck_dim = network_param.bottleneck_dim
         
+        self.student_head = nn.Sequential(
+            nn.Linear(self.head_in_features, self.proj_channels, bias=True),
+            nn.GELU(),
+            nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
+            L2Norm(),
+            nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
+        )#nn.Sequential(*proj_layers.copy())
+        self.teacher_head = nn.Sequential(
+            nn.Linear(self.head_in_features, self.proj_channels, bias=True),
+            nn.GELU(),
+            nn.Linear(self.proj_channels, self.bottleneck_dim, bias=True),
+            L2Norm(),
+            nn.Linear(self.bottleneck_dim, self.out_channels, bias=True)
+        )
+
         #Make heads with same architecture on both networks
-        self.student_head = self._get_head()
-        self.teacher_head = self._get_head()
+        # self.student_head = self._get_head()
+        # self.teacher_head = self._get_head()
 
         # teacher does not require gradient
         self.teacher_backbone.requires_grad_(False)

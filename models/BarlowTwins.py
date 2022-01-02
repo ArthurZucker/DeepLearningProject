@@ -24,7 +24,7 @@ class BarlowTwins(LightningModule):
         self.encoder = get_net(
             network_param.encoder,network_param
         )  # TODO add encoder name to the hparams, use getnet() to get the encoder
-        self.in_features = list(self.encoder.children())[-1].in_features
+        self.in_features = list(self.encoder.modules())[-1].in_features
         name_classif = list(self.encoder.named_children())[-1][0]
         self.encoder._modules[name_classif] = nn.Identity()
 
