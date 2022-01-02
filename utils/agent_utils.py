@@ -13,7 +13,10 @@ def get_net(arch,network_param, optimizer_param = None):
     except:
         mod = importlib.import_module(f"models.{arch}")
     net = getattr(mod,arch)
-    return net(network_param,optimizer_param)
+    if optimizer_param is not None:
+        return net(network_param,optimizer_param)
+    else : 
+        return net(network_param)
 
 
 def get_datamodule(datamodule,data_param,dataset = None):
