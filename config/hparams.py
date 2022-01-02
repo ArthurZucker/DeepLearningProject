@@ -58,17 +58,20 @@ class DatasetParams:
     # Image size, assumes square images
     num_workers: int = 20  # number of workers for dataloadersint
     input_size: tuple = (32, 32)  # image_size
-    batch_size: int = 256  # batch_size
+    batch_size: int = 32  # batch_size
     asset_path: str = osp.join(os.getcwd(), "assets")  # path to download the dataset
 
     # Dino params
     # number of crops/global_crops
-    n_crops: int = 8
+    n_crops: int = 8 #TODO already defined in the model.... 
     # number of global crops
     n_global_crops: int = 2
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.5, 1)
     local_crops_scale: List[float] = list_field(0.08, 0.5)
+
+    
+
 
 
 @dataclass
@@ -125,8 +128,8 @@ class DinoConfig:
     Used when the `arch` option is set to "Barlow" in the hparams
     """
 
-    student_backbone: str = choice("resnet50", "swinS", default="resnet50")
-    teacher_backbone: str = choice("resnet50", "swinS", default="resnet50")
+    student_backbone: str = "vit" 
+    teacher_backbone: str = student_backbone
     proj_layers: int = 3
     proj_channels: int = 2048
     bottleneck_dim: int = 256
@@ -146,13 +149,71 @@ class DinoConfig:
     )
     center_momentum: float = 0.9  # Default 0.9
     max_epochs: int = 200  # This is redundant with the hparms max_epochs
-    # out_dim: int = 256
-    # checkpoint
+    # number of classes to use for the fine tuning task
+    num_cat: int = 10
+
     weight_checkpoint: Optional[str] = osp.join(
         os.getcwd(),
-        "wandb/test-deep-learning/2gldaf6e/checkpoints/epoch=0-step=195.ckpt",
+        "weights/15nz0fepoch=78-step=15483.ckpt",
     )
 
+    backbone_parameters: Optional[str] = None
+
+    if student_backbone == "vit":
+        backbone_parameters: Dict[str, Any] = dict_field(
+            dict(
+                image_size = 32,
+                patch_size = 8,
+                num_classes = 10,
+                dim = 2048,
+                depth = 6,
+                heads = 16,
+                mlp_dim = 2048,
+                dropout = 0.1,
+                emb_dropout = 0.1
+            )
+    )
+
+@dataclass
+class DinoTwinConfig:
+    """Hyperparameters specific to the DINO Model.
+    Used when the `arch` option is set to "Barlow" in the hparams
+    """
+
+    student_backbone: str = choice("resnet50", "swinS", default="resnet50")
+    teacher_backbone: str = choice("resnet50", "swinS", default="resnet50")
+    proj_layers: int = 3
+    proj_channels: int = 2048
+    bottleneck_dim: int = 256
+    out_channels: int = 2048
+    # number of crops/global_crops
+    n_crops: int = 4
+    # number of global crops
+    n_global_crops: int = 2
+    # scale range of the crops
+    global_crops_scale: List[int] = list_field(0.5, 1)
+    local_crops_scale: List[float] = list_field(0.08, 0.5)
+    warmup_teacher_temp_epochs: int = 10  # Default 30
+    student_temp: float = 0.1
+    teacher_temp: float = 0.04  # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
+    warmup_teacher_temp: float = (
+        0.04  # would be different from techer temp if we used a warmup for this param
+    )
+    center_momentum: float = 0.9  # Default 0.9
+
+    # barlow twin scale
+    lmbda: float = 5e-3
+
+    # scale for the BT loss
+    bt_beta: float = 5e-3
+    max_epochs: int = 200  # This is redundant with the hparms max_epochs
+    # number of classes to use for the fine tuning task
+    num_cat: int = 10
+
+    weight_checkpoint: Optional[str] = osp.join(
+        os.getcwd(),
+        "wandb/test-deep-learning/1udkkevh/checkpoints/epoch=198-step=39003.ckpt",
+    )
 
 @dataclass
 class Parameters:
@@ -173,10 +234,11 @@ class Parameters:
 
         # Set render number of channels
         if "BarlowTwins" in self.hparams.arch:
-            self.network_param: BarlowConfig = BarlowConfig()
-
-        elif self.hparams.arch == "Dino":
-            self.network_param: DinoConfig = DinoConfig()
+            self.network_param: BarlowConfig    = BarlowConfig()
+        elif "Dinow" in self.hparams.arch:
+            self.network_param: DinoTwinConfig  = DinoTwinConfig()
+        elif  "Dino" in self.hparams.arch:
+            self.network_param: DinoConfig      = DinoConfig()
         # Set random seed
         if self.hparams.seed_everything is None:
             self.hparams.seed_everything = random.randint(1, 10000)
