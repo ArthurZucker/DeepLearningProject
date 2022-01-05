@@ -33,7 +33,7 @@ class Dino(LightningModule):
         self.momentum_schedule = cosine_scheduler(**optim_param.scheduler_parameters)
         
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
-        self.loss = DinoLoss(network_param, network_param.max_epochs)
+        self.loss = DinoLoss(network_param, optim_param.max_epochs)
 
         # get backbone models 
         self.head_in_features = 0
@@ -148,7 +148,7 @@ class Dino(LightningModule):
         self.optim_param.scheduler_parameters['niter_per_ep'] = len(self.trainer.datamodule.train_dataloader())
         self.momentum_schedule = cosine_scheduler(**self.optim_param.scheduler_parameters)
         scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer, warmup_epochs=10, max_epochs=40,warmup_start_lr=0.00005
+            optimizer, warmup_epochs=10, max_epochs=self.optim_param.max_epochs,warmup_start_lr=0.00005
         )
         return [[optimizer],[scheduler]]
     

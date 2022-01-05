@@ -344,12 +344,6 @@ class LogDinoDistribCallback(Callback):
             self.log_distrib(self.student_distrib,"student train")
             self.log_distrib(self.teacher_distrib,"teacher train")
 
-    def on_val_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
-    ):
-        """Called when the training batch ends."""
-        # Let's log 20 sample image predictions from first batch
-        pass
 
     def log_distrib(self, histogram, name):
         
@@ -379,74 +373,107 @@ class LogAttentionMapsCallback(Callback):
                 # return attention of the last block
                 return blk(x, return_attention=True)
     """
-    def __init__(self,log_student_distrib) -> None:
+    def __init__(self,log_student_distrib,nb_attention) -> None:
         super().__init__()
         self.log_freq = log_student_distrib
         self.threshold  = 0.5
         self.teacher_distrib  = None
+        self.nb_attention_images = nb_attention
 
-    def on_val_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx) -> None:
+        if batch_idx == 0 :
+            self.hooks = []
+            self.hooks.append(self._register_layer_hooks(pl_module))
+    
+    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
-        img = batch[0][0]        # only 1 image for now. The batch has [0,1,...,n_1] crops b_size images
-        w, h = img.shape[1] - img.shape[1] % pl_module.patch_size, img.shape[2] - img.shape[2] % pl_module.patch_size
-        img = img[:, :w, :h].unsqueeze(0)
+        if batch_idx == 0:
+            attention_maps = []
+            th_attention_map = []
+            for i in range(self.nb_attention_images):
+                img = batch[0][i]        # only 1 image for now. The batch has [0,1,...,n_1] crops b_size images
+                w, h = img.shape[1] - img.shape[1] % pl_module.patch_size, img.shape[2] - img.shape[2] % pl_module.patch_size
+                img = img[:, :w, :h].unsqueeze(0)
 
-        w_featmap = img.shape[-2] // pl_module.patch_size
-        h_featmap = img.shape[-1] // pl_module.patch_size
+                w_featmap = img.shape[-2] // pl_module.patch_size
+                h_featmap = img.shape[-1] // pl_module.patch_size
 
-        attentions = pl_module.get_last_selfattention(img)
+                attentions = self.attention[0][i] 
+                # 0 is for the crop 
+                # i is for the image in the batch
+                # extracts the attention maps for each head, corresponding to the first global crop, and the i-th image of the crop
+                # attention are obtained from hooks
 
-        nh = attentions.shape[1] # number of head
+                nh = attentions.shape[0] # number of head
 
 
-        attentions = pl_module.attentions[0, :, 0, 1:].reshape(nh, -1)
+                attentions = torch.tensor(attentions[:, 0, 1:].reshape(nh, -1))
 
-        if self.threshold is not None:
-            # we keep only a certain percentage of the mass
-            val, idx = torch.sort(attentions)
-            val /= torch.sum(val, dim=1, keepdim=True)
-            cumval = torch.cumsum(val, dim=1)
-            th_attn = cumval > (1 - args.threshold)
-            idx2 = torch.argsort(idx)
-            for head in range(nh):
-                th_attn[head] = th_attn[head][idx2[head]]
-            th_attn = th_attn.reshape(nh, w_featmap, h_featmap).float()
-            # interpolate
-            th_attn = nn.functional.interpolate(th_attn.unsqueeze(0), scale_factor=pl_module.patch_size, mode="nearest")[0].cpu().numpy()
+                if self.threshold is not None:
+                    # we keep only a certain percentage of the mass
+                    val, idx = torch.sort(attentions)
+                    val /= torch.sum(val, dim=1, keepdim=True)
+                    cumval = torch.cumsum(val, dim=1)
+                    th_attn = cumval > (1 - self.threshold)
+                    idx2 = torch.argsort(idx)
+                    for head in range(nh):
+                        th_attn[head] = th_attn[head][idx2[head]]
+                    th_attn = th_attn.reshape(nh, w_featmap, h_featmap).float()
+                    # interpolate
+                    th_attn = nn.functional.interpolate(th_attn.unsqueeze(0), scale_factor=pl_module.patch_size, mode="nearest")[0].cpu()
+                    # lets now display the attentions thresholded for each heads on a single map 
+                    
+                    th_attention_map.append(th_attn)
+                    
+                
+                attentions = attentions.reshape(nh, w_featmap, h_featmap)
+                attentions = nn.functional.interpolate(attentions.unsqueeze(0), scale_factor=pl_module.patch_size, mode="nearest")[0].cpu()
 
-        attentions = attentions.reshape(nh, w_featmap, h_featmap)
-        attentions = nn.functional.interpolate(attentions.unsqueeze(0), scale_factor=pl_module.patch_size, mode="nearest")[0].cpu().numpy()
+                plt.ioff()
+                grid_img = torchvision.utils.make_grid(attentions, normalize=True, scale_each=True,nrow=nh//2)
+                attention_maps.append([img.squeeze(0).cpu().numpy()]+list(grid_img.numpy()))
+                del grid_img
+                
+            self.show(attention_maps,th_attention_map)
+            
+            del attention_maps
+            self._clear_hooks()
+        
+    def show(self,imgs,th_attention_map):
+        import torchvision.transforms.functional as F
+        plt.ioff()
+        fix, axs = plt.subplots(nrows=len(imgs), ncols=len(imgs[0])+1,squeeze=True)
+        mean = np.array([0.485, 0.456, 0.406])  # TODO this is not beautiful
+        std  = np.array([0.229, 0.224, 0.225])
+        for j,sample in enumerate(imgs):
+            for i, head in enumerate(sample):
+                if i == 0: #original crop 
+                    org = np.asarray(head).transpose(1,2,0)
+                    axs[j, 0].imshow(np.clip(mean*org + std,0,1))
+                else: 
+                    img = head
+                    img = F.to_pil_image(img)
+                    axs[j, i].imshow(np.asarray(img))
+                axs[j, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+            org = np.asarray(sample[0]).transpose(1,2,0)
+            image = np.clip(mean*org + std,0,1)
+            self.log_th_attention(image,th_attention_map[j],axs[j, i+1]) # log the thresholded attention maps
+            
+        fix.subplots_adjust(wspace=0.005, hspace=0.005)
+        attention_heads = wandb.Image(plt)
+        wandb.log({"attention heads":attention_heads})
+        plt.close()
 
-        torchvision.utils.make_grid(img, normalize=True, scale_each=True)
-
-        # save attentions heatmaps
-        for j in range(nh):
-            fname="attn-head" + str(j) + ".png"
-            plt.imsave( fname,arr=attentions[j], format='png')
-            print(f"{fname} saved.")
-            self.display_instances(img, th_attn[j], fname= "mask_th" + str(self.threshold) + "_head" + str(j) +".png", blur=False)
-
-    def display_instances(image,mask,fname,blur,alpha = 0.8,contour =True):
-        import skimage.io
+    
+    
+    def log_th_attention(self,image,th_att,ax):
+        """th_attn should have every thrsholded attention maps for each heds, and each image that is being worked on 
+        """
+        import colorsys
+        import random
         from skimage.measure import find_contours
         import matplotlib.pyplot as plt
         from matplotlib.patches import Polygon
-        import torch
-        import torch.nn as nn
-        import torchvision
-        from torchvision import transforms as pth_transforms
-        import numpy as np
-        from PIL import Image
-        import cv2
-        import random
-        import colorsys
-        def apply_mask(image, mask, color, alpha=0.5):
-            for c in range(3):
-                image[:, :, c] = image[:, :, c] * (1 - alpha * mask) + alpha * mask * color[c] * 255
-            return image
-
-
         def random_colors(N, bright=True):
             """
             Generate random colors.
@@ -456,43 +483,40 @@ class LogAttentionMapsCallback(Callback):
             colors = list(map(lambda c: colorsys.hsv_to_rgb(*c), hsv))
             random.shuffle(colors)
             return colors
-        fig = plt.figure(figsize=(150,150), frameon=False)
-        ax = plt.Axes(fig, [0., 0., 1., 1.])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        ax = plt.gca()
-
-        N = 1
-        mask = mask[None, :, :]
+        
+        def apply_mask(image, mask, color, alpha=0.5):
+            for c in range(3):
+                image[:, :, c] = image[:, :, c] * (1 - alpha * mask) + alpha * mask * color[c] * 255
+            return image
+        
+        N = th_att.shape[0]
+        mask = th_att
         # Generate random colors
         colors = random_colors(N)
-
-        # Show area outside image boundaries.
-        height, width = image.shape[:2]
-        margin = 0
-        ax.set_ylim(height + margin, -margin)
-        ax.set_xlim(-margin, width + margin)
-        ax.axis('off')
         masked_image = image.astype(np.uint32).copy()
+        contour = True
         for i in range(N):
-            color = colors[i]
-            _mask = mask[i]
-            if blur:
-                _mask = cv2.blur(_mask,(10,10))
+            color = colors[i]            
+            _mask = mask[i].numpy()
             # Mask
-            masked_image = apply_mask(masked_image, _mask, color, alpha)
+            masked_image = apply_mask(masked_image, _mask, color, alpha=0.5)
             # Mask Polygon
             # Pad to ensure proper polygons for masks that touch image edges.
-            if contour:
-                padded_mask = np.zeros((_mask.shape[0] + 2, _mask.shape[1] + 2))
-                padded_mask[1:-1, 1:-1] = _mask
-                contours = find_contours(padded_mask, 0.5)
-                for verts in contours:
-                    # Subtract the padding and flip (y, x) to (x, y)
-                    verts = np.fliplr(verts) - 1
-                    p = Polygon(verts, facecolor="none", edgecolor=color)
-                    ax.add_patch(p)
-        ax.imshow(masked_image.astype(np.uint8), aspect='auto')
-        fig.savefig(fname)
-        print(f"{fname} saved.")
-        return
+            ax.imshow(masked_image.astype(np.uint8))
+        ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+        
+    def _register_layer_hooks(self,pl_module):
+        from utils.hooks import get_attention
+        self.hooks = []
+        named_layers = dict(pl_module.named_modules())
+        attend_layers = []
+        for name in named_layers:
+            if ".attend" in name and "student" in name:
+                attend_layers.append(named_layers[name])
+        self.attention = []
+        self.hooks.append(attend_layers[-1].register_forward_hook(get_attention(self.attention)))
+    
+    def _clear_hooks(self):
+        for hk in self.hooks:
+            hk.remove()
+        del self.hooks

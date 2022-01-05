@@ -12,6 +12,7 @@ from utils.callbacks import (
     LogDinoImagesCallback,
     LogDinoDistribCallback,
     LogDinowCCMatrixCallback,
+    LogAttentionMapsCallback
 )
 
 from agents.BaseTrainer import BaseTrainer
@@ -38,7 +39,8 @@ class trainer(BaseTrainer):
                 LearningRateMonitor(),
                 LogDinoImagesCallback(self.config.log_pred_freq),
                 LogDinoDistribCallback(self.config.log_dino_freq),
-                #LogMetricsCallBack(),
+                LogAttentionMapsCallback(self.config.attention_threshold,self.config.nb_attention),
+                # LogMetricsCallBack(),
                 # LogBarlowPredictionsCallback(self.config.log_pred_freq) , # FIXME only add these if we are using barlow
                 # LogBarlowCCMatrixCallback(self.config.log_ccM_freq) # FIXME memory error had to remove it
                 LogDinowCCMatrixCallback(self.config.log_dino_freq)

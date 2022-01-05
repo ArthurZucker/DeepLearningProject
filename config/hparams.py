@@ -22,7 +22,7 @@ Most notably, the agent, dataset, optimizer and loss can all be specified and au
 class Hparams:
     """Hyperparameters of Your Model"""
 
-    wandb_project: str = "test-deep-learning"  # name of the project
+    wandb_project: str = "deep-learning"  # name of the project
     wandb_entity: str = "dinow-twins"  # name of the wandb entity, here our team
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
     arch: str = "DinowTwins"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
@@ -38,7 +38,7 @@ class Hparams:
     precision: int = 32  # precision
     val_freq: int = 1  # validation frequency
     dev_run: bool = False  # developpment mode, only run 1 batch of train val and test
-    accumulate_size: int = 512  # gradient accumulation batch size
+    accumulate_size: int = 1024  # gradient accumulation batch size
     # maximum number of epochs
     max_epochs: int = 400
     # path to download pascal voc
@@ -51,7 +51,10 @@ class Hparams:
     log_dino_freq: int = 1
     # path to save weights
     weights_path: str = osp.join(os.getcwd(), "weights")
-
+    
+    # Logging attentino
+    attention_threshold: float = 0.6
+    nb_attention: int = 5
 
 @dataclass
 class DatasetParams:
@@ -60,7 +63,7 @@ class DatasetParams:
     # Image size, assumes square images
     num_workers: int = 20  # number of workers for dataloadersint
     input_size: tuple = (32, 32)  # image_size
-    batch_size: int = 256  # batch_size
+    batch_size: int = 128  # batch_size
     asset_path: str = osp.join(os.getcwd(), "assets")  # path to download the dataset
 
     # Dino params
@@ -80,13 +83,14 @@ class DatasetParams:
 class OptimizerParams:
     """Optimization parameters"""
 
-    optimizer: str = "Adam"  # Optimizer (adam, rmsprop)
+    optimizer: str = "AdamW"  # Optimizer (adam, rmsprop)
     lr: float = 5e-4  # learning rate, default=0.0002
     lr_sched_type: str = "step"  # Learning rate scheduler type.
     z_lr_sched_step: int = 100000  # Learning rate schedule for z.
     lr_iter: int = 10000  # Learning rate operation iterations
     normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
     betas: List[float] = list_field(0.9, 0.999)  # beta1 for adam. default=(0.9, 0.999)
+    max_epochs: int = 400  # This is redundant with the hparms max_epochs
     scheduler_parameters: Dict[str, Any] = dict_field(
         dict(
             base_value=0.9995,
@@ -150,13 +154,12 @@ class DinoConfig:
         0.04  # would be different from techer temp if we used a warmup for this param
     )
     center_momentum: float = 0.9  # Default 0.9
-    max_epochs: int = 400  # This is redundant with the hparms max_epochs
     # number of classes to use for the fine tuning task
     num_cat: int = 10
 
     weight_checkpoint: Optional[str] = osp.join(
         os.getcwd(),
-        "/home/arthur/Work/MVA-S1/DeepLearning/DeepLearningProject/weights/dino/epoch=191-step=37631.ckpt"
+        #"/home/arthur/Work/MVA-S1/DeepLearning/DeepLearningProject/weights/dino/epoch=191-step=37631.ckpt"
         #"/home/arthur/Work/MVA-S1/DeepLearning/DeepLearningProject/weights/dino/epoch=386-step=75851.ckpt"
         #"wandb/test-deep-learning/15nz03bf/checkpoints/epoch=124-step=24499.ckpt"
         #"weights/DinoDataset-epoch=39-val_loss=0.00.ckpt"
@@ -169,12 +172,12 @@ class DinoConfig:
         backbone_parameters: Dict[str, Any] = dict_field(
             dict(
                 image_size = 32,
-                patch_size = 8,
-                num_classes = 10,
-                dim = 2048,
-                depth = 6,
-                heads = 16,
-                mlp_dim = 2048,
+                patch_size = 4,
+                num_classes = 0,
+                dim = 192,
+                depth = 4,
+                heads = 6,
+                mlp_dim = 1024,
                 dropout = 0.1,
                 emb_dropout = 0.1
             )
@@ -186,8 +189,8 @@ class DinoTwinConfig:
     Used when the `arch` option is set to "Barlow" in the hparams
     """
 
-    student_backbone: str = choice("resnet50", "swinS", default="resnet50")
-    teacher_backbone: str = choice("resnet50", "swinS", default="resnet50")
+    student_backbone: str = "vit"#choice("resnet50", "swinS", default="resnet50")
+    teacher_backbone: str = "vit"#choice("resnet50", "swinS", default="resnet50")
     proj_layers: int = 3
     proj_channels: int = 2048
     bottleneck_dim: int = 256
@@ -206,19 +209,33 @@ class DinoTwinConfig:
         0.04  # would be different from techer temp if we used a warmup for this param
     )
     center_momentum: float = 0.9  # Default 0.9
-
+    
+    
     # barlow twin scale
     lmbda: float = 5e-3
 
     # scale for the BT loss
     bt_beta: float = 5e-3 * 0.5
-    max_epochs: int = 400  # This is redundant with the hparms max_epochs
     # number of classes to use for the fine tuning task
     num_cat: int = 10
+    if student_backbone == "vit":
+        backbone_parameters: Dict[str, Any] = dict_field(
+            dict(
+                image_size = 32,
+                patch_size = 4,
+                num_classes = 0,
+                dim = 192,
+                depth = 4,
+                heads = 6,
+                mlp_dim = 1024,
+                dropout = 0.1,
+                emb_dropout = 0.1
+            )
+    )
 
     weight_checkpoint: Optional[str] = osp.join(
         os.getcwd(),
-        "wandb/test-deep-learning/2z4ulgmh/checkpoints/epoch=79-step=15679.ckpt",
+        #"wandb/test-deep-learning/2z4ulgmh/checkpoints/epoch=79-step=15679.ckpt",
     )
 
 @dataclass
@@ -241,9 +258,9 @@ class Parameters:
         # Set render number of channels
         if "BarlowTwins" in self.hparams.arch:
             self.network_param: BarlowConfig    = BarlowConfig()
-        elif "Dinow" in self.hparams.arch:
+        elif "DinowTwins" == self.hparams.arch:
             self.network_param: DinoTwinConfig  = DinoTwinConfig()
-        elif  "Dino" in self.hparams.arch:
+        elif  "Dino" == self.hparams.arch:
             self.network_param: DinoConfig      = DinoConfig()
         # Set random seed
         if self.hparams.seed_everything is None:

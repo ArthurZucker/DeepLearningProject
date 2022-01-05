@@ -28,20 +28,20 @@ class DinowTwins(LightningModule):
         
         # optimizer/scheduler parameters
         self.optim_param = optim_param
-        
+        self.patch_size = network_param.backbone_parameters["patch_size"]
         #initialize momentum scheduler. This is overwritten by the configure optimizers method
         self.momentum_schedule = cosine_scheduler(**optim_param.scheduler_parameters)
         
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
-        self.loss = DinowTwinsLoss(network_param, network_param.max_epochs)
+        self.loss = DinowTwinsLoss(network_param, optim_param.max_epochs)
 
         # get backbone models 
         self.head_in_features = 0
         self.student_backbone = get_net(
-            network_param.student_backbone,network_param
+            network_param.student_backbone,network_param.backbone_parameters
         )
         self.teacher_backbone = get_net(
-            network_param.teacher_backbone,network_param
+            network_param.teacher_backbone,network_param.backbone_parameters
         )
 
         # Adapt models to the self-supervised task
@@ -68,8 +68,10 @@ class DinowTwins(LightningModule):
         self.teacher_head.load_state_dict(self.student_head.state_dict())
         
         if network_param.weight_checkpoint is not None: 
-            self.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
-            
+            try:
+                self.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
+            except:
+                pass
 
     def forward(self, crops):
         
@@ -144,7 +146,7 @@ class DinowTwins(LightningModule):
         self.optim_param.scheduler_parameters['niter_per_ep'] = len(self.trainer.datamodule.train_dataloader())
         self.momentum_schedule = cosine_scheduler(**self.optim_param.scheduler_parameters)
         scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer, warmup_epochs=0, max_epochs=40,warmup_start_lr=0.000005
+            optimizer, warmup_epochs=10, max_epochs=self.optim_param.max_epochs,warmup_start_lr=0.000005
         )
         return [[optimizer],[scheduler]]
     
