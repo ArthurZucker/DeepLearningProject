@@ -25,7 +25,7 @@ class Hparams:
     wandb_project: str = "test-deep-learning"  # name of the project
     wandb_entity: str = "dinow-twins"  # name of the wandb entity, here our team
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
-    arch: str = "Dino"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
+    arch: str = "DinowTwins"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
     # datamodule to use, for now we only have one dataset, CIFAR10
     datamodule: str = "DinoDataModule"
     dataset: Optional[str] = "DinoDataset"
@@ -38,9 +38,9 @@ class Hparams:
     precision: int = 32  # precision
     val_freq: int = 1  # validation frequency
     dev_run: bool = False  # developpment mode, only run 1 batch of train val and test
-    accumulate_size: int = 1024  # gradient accumulation batch size
+    accumulate_size: int = 512  # gradient accumulation batch size
     # maximum number of epochs
-    max_epochs: int = 200
+    max_epochs: int = 400
     # path to download pascal voc
     asset_path: str = osp.join(os.getcwd(), "assets")
     # log_pred_freq
@@ -49,6 +49,8 @@ class Hparams:
     log_ccM_freq: int = 1
     # log output frrequency for dino
     log_dino_freq: int = 1
+    # path to save weights
+    weights_path: str = osp.join(os.getcwd(), "weights")
 
 
 @dataclass
@@ -58,17 +60,17 @@ class DatasetParams:
     # Image size, assumes square images
     num_workers: int = 20  # number of workers for dataloadersint
     input_size: tuple = (32, 32)  # image_size
-    batch_size: int = 32  # batch_size
+    batch_size: int = 256  # batch_size
     asset_path: str = osp.join(os.getcwd(), "assets")  # path to download the dataset
 
     # Dino params
     # number of crops/global_crops
-    n_crops: int = 8 #TODO already defined in the model.... 
+    n_crops: int = 5 #TODO already defined in the model.... 
     # number of global crops
     n_global_crops: int = 2
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.5, 1)
-    local_crops_scale: List[float] = list_field(0.08, 0.5)
+    local_crops_scale: List[float] = list_field(0.05, 0.5)
 
     
 
@@ -79,7 +81,7 @@ class OptimizerParams:
     """Optimization parameters"""
 
     optimizer: str = "Adam"  # Optimizer (adam, rmsprop)
-    lr: float = 3e-4  # learning rate, default=0.0002
+    lr: float = 5e-4  # learning rate, default=0.0002
     lr_sched_type: str = "step"  # Learning rate scheduler type.
     z_lr_sched_step: int = 100000  # Learning rate schedule for z.
     lr_iter: int = 10000  # Learning rate operation iterations
@@ -128,33 +130,37 @@ class DinoConfig:
     Used when the `arch` option is set to "Barlow" in the hparams
     """
 
-    student_backbone: str = "vit" 
+    student_backbone: str = "resnet50" 
     teacher_backbone: str = student_backbone
     proj_layers: int = 3
     proj_channels: int = 2048
     bottleneck_dim: int = 256
     out_channels: int = 4096
     # number of crops/global_crops
-    n_crops: int = 8
+    n_crops: int = 5
     # number of global crops
     n_global_crops: int = 2
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.5, 1)
-    local_crops_scale: List[float] = list_field(0.08, 0.5)
+    local_crops_scale: List[float] = list_field(0.05, 0.5)
     warmup_teacher_temp_epochs: int = 10  # Default 30
     student_temp: float = 0.1
-    teacher_temp: float = 0.04  # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
+    teacher_temp: float = 0.07  # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
     warmup_teacher_temp: float = (
         0.04  # would be different from techer temp if we used a warmup for this param
     )
     center_momentum: float = 0.9  # Default 0.9
-    max_epochs: int = 200  # This is redundant with the hparms max_epochs
+    max_epochs: int = 400  # This is redundant with the hparms max_epochs
     # number of classes to use for the fine tuning task
     num_cat: int = 10
 
     weight_checkpoint: Optional[str] = osp.join(
         os.getcwd(),
-        "weights/15nz0fepoch=78-step=15483.ckpt",
+        "/home/arthur/Work/MVA-S1/DeepLearning/DeepLearningProject/weights/dino/epoch=191-step=37631.ckpt"
+        #"/home/arthur/Work/MVA-S1/DeepLearning/DeepLearningProject/weights/dino/epoch=386-step=75851.ckpt"
+        #"wandb/test-deep-learning/15nz03bf/checkpoints/epoch=124-step=24499.ckpt"
+        #"weights/DinoDataset-epoch=39-val_loss=0.00.ckpt"
+        #"weights/15nz0fepoch=78-step=15483.ckpt",
     )
 
     backbone_parameters: Optional[str] = None
@@ -187,15 +193,15 @@ class DinoTwinConfig:
     bottleneck_dim: int = 256
     out_channels: int = 2048
     # number of crops/global_crops
-    n_crops: int = 4
+    n_crops: int = 5
     # number of global crops
     n_global_crops: int = 2
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.5, 1)
-    local_crops_scale: List[float] = list_field(0.08, 0.5)
+    local_crops_scale: List[float] = list_field(0.05, 0.5)
     warmup_teacher_temp_epochs: int = 10  # Default 30
     student_temp: float = 0.1
-    teacher_temp: float = 0.04  # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
+    teacher_temp: float = 0.07  # Default 0.04, can be linearly increased to 0.07 but then it becomes unstable
     warmup_teacher_temp: float = (
         0.04  # would be different from techer temp if we used a warmup for this param
     )
@@ -205,14 +211,14 @@ class DinoTwinConfig:
     lmbda: float = 5e-3
 
     # scale for the BT loss
-    bt_beta: float = 5e-3
-    max_epochs: int = 200  # This is redundant with the hparms max_epochs
+    bt_beta: float = 5e-3 * 0.5
+    max_epochs: int = 400  # This is redundant with the hparms max_epochs
     # number of classes to use for the fine tuning task
     num_cat: int = 10
 
     weight_checkpoint: Optional[str] = osp.join(
         os.getcwd(),
-        "wandb/test-deep-learning/1udkkevh/checkpoints/epoch=198-step=39003.ckpt",
+        "wandb/test-deep-learning/2z4ulgmh/checkpoints/epoch=79-step=15679.ckpt",
     )
 
 @dataclass

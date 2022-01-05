@@ -66,6 +66,10 @@ class DinowTwins(LightningModule):
         #Initialize both networks with the same weights
         self.teacher_backbone.load_state_dict(self.student_backbone.state_dict())
         self.teacher_head.load_state_dict(self.student_head.state_dict())
+        
+        if network_param.weight_checkpoint is not None: 
+            self.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
+            
 
     def forward(self, crops):
         
@@ -85,15 +89,15 @@ class DinowTwins(LightningModule):
         student_out = self.student_head(full_st_output)
         teacher_out = self.teacher_head(full_teacher_output)
         barlow_out = self.bt_proj(full_st_output)
-        return student_out, teacher_out, barlow_out
+        return student_out, teacher_out , barlow_out
 
     def training_step(self, batch, batch_idx):
         '''needs to return a loss from a single batch'''
         # update iteration parameter
         self.curr_iteration += 1
         
-        loss = self._get_loss(batch)
-        
+        dino_loss,bt_loss = self._get_loss(batch)
+        loss = dino_loss+bt_loss
         # EMA update for the teacher
         with torch.no_grad():
             # update momentum according to schedule and curr_iteration 
@@ -107,15 +111,20 @@ class DinowTwins(LightningModule):
 
         # Log loss and metric
         self.log('train/loss', loss)
+        self.log('train/dino_loss', dino_loss)
+        self.log('train/bt_loss', bt_loss)
 
         return loss
 
     def validation_step(self, batch, batch_idx):
         '''used for logging metrics'''
-        loss = self._get_loss(batch)
+        dino_loss,bt_loss = self._get_loss(batch)
+        loss = dino_loss+bt_loss
 
         # Log loss and metric
         self.log('val/loss', loss)
+        self.log('val/dino_loss', dino_loss)
+        self.log('val/bt_loss', bt_loss)
 
         return loss
 
@@ -135,17 +144,18 @@ class DinowTwins(LightningModule):
         self.optim_param.scheduler_parameters['niter_per_ep'] = len(self.trainer.datamodule.train_dataloader())
         self.momentum_schedule = cosine_scheduler(**self.optim_param.scheduler_parameters)
         scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer, warmup_epochs=10, max_epochs=40,warmup_start_lr=0.005
+            optimizer, warmup_epochs=0, max_epochs=40,warmup_start_lr=0.000005
         )
         return [[optimizer],[scheduler]]
     
     def _get_loss(self, batch):
         '''convenience function since train/valid/test steps are similar'''
         student_out, teacher_out, bt_out = self(batch)
-        
+        #student_out, teacher_out = self(batch)
         dino_loss, bt_loss = self.loss(student_out, teacher_out, bt_out, self.current_epoch)
+        #dino_loss, bt_loss = self.loss(student_out, teacher_out, self.current_epoch)
 
-        return dino_loss + bt_loss
+        return dino_loss,bt_loss
     
     def _get_head(self):
         # first layer 

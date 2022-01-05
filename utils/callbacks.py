@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-
+import torch
+import torch.nn as nn
+import torchvision
 
 from utils.metrics import MetricsModule
 class LogBarlowPredictionsCallback(Callback):
@@ -107,6 +109,60 @@ class LogBarlowCCMatrixCallback(Callback):
         else: 
             self.cc_M =  pl_module.loss.cc_M
         del pl_module.loss.cc_M 
+
+        if batch_idx == 0:
+            self.log_cc_M("val")
+
+    def log_cc_M(self,name):
+        heatmap = self.cc_M
+        ax = sns.heatmap(heatmap, cmap="rainbow",cbar=False)
+        plt.title(f"Cross correlation matrix")
+        ax.set_axis_off()
+        wandb.log({f"cc_Matrix/{name}" : (wandb.Image(plt))})
+        plt.close()
+        self.cc_M = None
+
+class LogDinowCCMatrixCallback(Callback):
+    """Logs the cross correlation matrix obtain 
+    when computing the loss. This gives us an idea of 
+    how the network learns. 
+    TODO : when should we log ? 
+    TODO : should we average over batches only? Or epoch? 
+    For now, the average over the epoch will be computed
+    as a moving average. 
+    A hook should be registered on the loss, using a new argument in the loss 
+    loss.cc_M which will be stored each time and then deleted
+    
+    """
+    def __init__(self,log_ccM_freq) -> None:
+        super().__init__()
+        self.log_ccM_freq = log_ccM_freq
+        self.cc_M  = None
+
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+        # Let's log 20 sample image predictions from first batch
+        if self.cc_M is not None : 
+            self.cc_M += (pl_module.loss.bt_loss.cc_M - self.cc_M)/(batch_idx+1) 
+        else: 
+            self.cc_M =  pl_module.loss.bt_loss.cc_M
+        del pl_module.loss.bt_loss.cc_M 
+
+        if batch_idx == 0 and pl_module.current_epoch % self.log_ccM_freq == 0:
+            self.log_cc_M("train")
+
+    def on_val_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        """Called when the training batch ends."""
+        # Let's log 20 sample image predictions from first batch
+        if self.cc_M is not None : 
+            self.cc_M += (pl_module.loss.bt_loss.cc_M - self.cc_M)/(batch_idx+1) 
+        else: 
+            self.cc_M =  pl_module.loss.bt_loss.cc_M
+        del pl_module.loss.bt_loss.cc_M 
 
         if batch_idx == 0:
             self.log_cc_M("val")
@@ -313,4 +369,130 @@ class LogDinoDistribCallback(Callback):
 
 
 class LogAttentionMapsCallback(Callback):
-    pass
+    """ Should only be used durng the fine-tuning task on a pretrained backbone
+    def get_last_selfattention(self, x):
+        x = self.prepare_tokens(x)
+        for i, blk in enumerate(self.blocks):
+            if i < len(self.blocks) - 1:
+                x = blk(x)
+            else:
+                # return attention of the last block
+                return blk(x, return_attention=True)
+    """
+    def __init__(self,log_student_distrib) -> None:
+        super().__init__()
+        self.log_freq = log_student_distrib
+        self.threshold  = 0.5
+        self.teacher_distrib  = None
+
+    def on_val_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        img = batch[0][0]        # only 1 image for now. The batch has [0,1,...,n_1] crops b_size images
+        w, h = img.shape[1] - img.shape[1] % pl_module.patch_size, img.shape[2] - img.shape[2] % pl_module.patch_size
+        img = img[:, :w, :h].unsqueeze(0)
+
+        w_featmap = img.shape[-2] // pl_module.patch_size
+        h_featmap = img.shape[-1] // pl_module.patch_size
+
+        attentions = pl_module.get_last_selfattention(img)
+
+        nh = attentions.shape[1] # number of head
+
+
+        attentions = pl_module.attentions[0, :, 0, 1:].reshape(nh, -1)
+
+        if self.threshold is not None:
+            # we keep only a certain percentage of the mass
+            val, idx = torch.sort(attentions)
+            val /= torch.sum(val, dim=1, keepdim=True)
+            cumval = torch.cumsum(val, dim=1)
+            th_attn = cumval > (1 - args.threshold)
+            idx2 = torch.argsort(idx)
+            for head in range(nh):
+                th_attn[head] = th_attn[head][idx2[head]]
+            th_attn = th_attn.reshape(nh, w_featmap, h_featmap).float()
+            # interpolate
+            th_attn = nn.functional.interpolate(th_attn.unsqueeze(0), scale_factor=pl_module.patch_size, mode="nearest")[0].cpu().numpy()
+
+        attentions = attentions.reshape(nh, w_featmap, h_featmap)
+        attentions = nn.functional.interpolate(attentions.unsqueeze(0), scale_factor=pl_module.patch_size, mode="nearest")[0].cpu().numpy()
+
+        torchvision.utils.make_grid(img, normalize=True, scale_each=True)
+
+        # save attentions heatmaps
+        for j in range(nh):
+            fname="attn-head" + str(j) + ".png"
+            plt.imsave( fname,arr=attentions[j], format='png')
+            print(f"{fname} saved.")
+            self.display_instances(img, th_attn[j], fname= "mask_th" + str(self.threshold) + "_head" + str(j) +".png", blur=False)
+
+    def display_instances(image,mask,fname,blur,alpha = 0.8,contour =True):
+        import skimage.io
+        from skimage.measure import find_contours
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Polygon
+        import torch
+        import torch.nn as nn
+        import torchvision
+        from torchvision import transforms as pth_transforms
+        import numpy as np
+        from PIL import Image
+        import cv2
+        import random
+        import colorsys
+        def apply_mask(image, mask, color, alpha=0.5):
+            for c in range(3):
+                image[:, :, c] = image[:, :, c] * (1 - alpha * mask) + alpha * mask * color[c] * 255
+            return image
+
+
+        def random_colors(N, bright=True):
+            """
+            Generate random colors.
+            """
+            brightness = 1.0 if bright else 0.7
+            hsv = [(i / N, 1, brightness) for i in range(N)]
+            colors = list(map(lambda c: colorsys.hsv_to_rgb(*c), hsv))
+            random.shuffle(colors)
+            return colors
+        fig = plt.figure(figsize=(150,150), frameon=False)
+        ax = plt.Axes(fig, [0., 0., 1., 1.])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+        ax = plt.gca()
+
+        N = 1
+        mask = mask[None, :, :]
+        # Generate random colors
+        colors = random_colors(N)
+
+        # Show area outside image boundaries.
+        height, width = image.shape[:2]
+        margin = 0
+        ax.set_ylim(height + margin, -margin)
+        ax.set_xlim(-margin, width + margin)
+        ax.axis('off')
+        masked_image = image.astype(np.uint32).copy()
+        for i in range(N):
+            color = colors[i]
+            _mask = mask[i]
+            if blur:
+                _mask = cv2.blur(_mask,(10,10))
+            # Mask
+            masked_image = apply_mask(masked_image, _mask, color, alpha)
+            # Mask Polygon
+            # Pad to ensure proper polygons for masks that touch image edges.
+            if contour:
+                padded_mask = np.zeros((_mask.shape[0] + 2, _mask.shape[1] + 2))
+                padded_mask[1:-1, 1:-1] = _mask
+                contours = find_contours(padded_mask, 0.5)
+                for verts in contours:
+                    # Subtract the padding and flip (y, x) to (x, y)
+                    verts = np.fliplr(verts) - 1
+                    p = Polygon(verts, facecolor="none", edgecolor=color)
+                    ax.add_patch(p)
+        ax.imshow(masked_image.astype(np.uint8), aspect='auto')
+        fig.savefig(fname)
+        print(f"{fname} saved.")
+        return

@@ -26,14 +26,10 @@ def main():
         save_dir=parameters.hparams.save_dir,
     )
     config = parameters
-    # seed_everything(config.seed_everything)
-    # wandb.define_metric("val/loss", summary="min")
     # Create the Agent and pass all the configuration to it then run it..
     agent_class = globals()[config.hparams.agent]
     agent = agent_class(config, wandb_run)
-    # run the model
     agent.run()
-    # agent.finalize()
 
 
 

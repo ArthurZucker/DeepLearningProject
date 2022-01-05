@@ -27,9 +27,9 @@ class DinoFT(LightningModule):
         if network_param.weight_checkpoint is not None: 
             self.pretrained_dino.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
         
-        self.head_out_features = list(self.pretrained_dino.student_head.children())[-1].out_features
+        self.head_out_features = list(self.pretrained_dino.student_head.children())[0].out_features
         self.pretrained_dino.requires_grad_(False)        
-        self.linear = nn.Linear(self.head_out_features, self.num_cat)
+        self.linear = nn.Linear(2048, self.num_cat)
 
     def forward(self, x):
         # Feed the data through pretrained barlow twins and prediciton layer

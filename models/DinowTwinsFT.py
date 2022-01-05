@@ -22,12 +22,13 @@ class DinowTwinsFT(LightningModule):
         '''method used to define our model parameters'''
         super().__init__()
 
+        
         # Network parameters 
         self.num_cat = network_param.num_cat
         
         # optimizer/scheduler parameters
         self.optim_param = optim_param
-        
+        self.lr = self.optim_param.lr
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
         self.loss = nn.CrossEntropyLoss()
 
@@ -43,8 +44,10 @@ class DinowTwinsFT(LightningModule):
         # Feed the data through pretrained barlow twins and prediciton layer
         out = self.pretrained_dinow_twin.student_backbone(x)
         out = self.pretrained_dinow_twin.student_head(out)
+        # out = F.softmax(self.pretrained_dinow_twin.student_head(out))
+        # out = self.pretrained_dinow_twin.bt_proj(out)
+        # out = self.linear(torch.cat((out1,out2),1))
         out = self.linear(out)
-
         return out
 
     def training_step(self, batch, batch_idx):
@@ -65,7 +68,7 @@ class DinowTwinsFT(LightningModule):
     def configure_optimizers(self):
         """defines model optimizer"""
         optimizer = getattr(torch.optim,self.optim_param.optimizer)
-        optimizer = optimizer(self.parameters(), lr=self.optim_param.lr)
+        optimizer = optimizer(self.parameters(), lr=self.lr)
         # scheduler = LinearWarmupCosineAnnealingLR(
         #     optimizer, warmup_epochs=5, max_epochs=40
         # )
