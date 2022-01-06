@@ -43,7 +43,7 @@ class trainer(BaseTrainer):
                 # LogMetricsCallBack(),
                 # LogBarlowPredictionsCallback(self.config.log_pred_freq) , # FIXME only add these if we are using barlow
                 # LogBarlowCCMatrixCallback(self.config.log_ccM_freq) # FIXME memory error had to remove it
-                LogDinowCCMatrixCallback(self.config.log_dino_freq)
+                # LogDinowCCMatrixCallback(self.config.log_dino_freq)
             ],  # logging of sample predictions
             gpus=self.config.gpu,  # use all available GPU's
             max_epochs=self.config.max_epochs,  # number of epochs

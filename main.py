@@ -18,8 +18,12 @@ from pytorch_lightning.loggers import WandbLogger
 def main():
     parameters = Parameters.parse()
     # initialize wandb instance
+    wdb_config = {}
+    for k,v in vars(parameters).items():
+        for key,value in vars(v).items():
+            wdb_config[f"{k}-{key}"]=value
     wandb_run = WandbLogger(
-        config=vars(parameters),  # FIXME use the full parameters
+        config=wdb_config,# vars(parameters),  # FIXME use the full parameters
         project=parameters.hparams.wandb_project,
         entity=parameters.hparams.wandb_entity,
         allow_val_change=True,

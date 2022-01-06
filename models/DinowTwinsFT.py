@@ -21,8 +21,6 @@ class DinowTwinsFT(LightningModule):
     def __init__(self, network_param, optim_param = None):
         '''method used to define our model parameters'''
         super().__init__()
-
-        
         # Network parameters 
         self.num_cat = network_param.num_cat
         
@@ -34,16 +32,17 @@ class DinowTwinsFT(LightningModule):
 
         self.pretrained_dinow_twin = DinowTwins(network_param,optim_param) #BarlowTwins(network_param)
         if network_param.weight_checkpoint is not None: 
+            print(f"Loaded chekpoint from {network_param.weight_checkpoint}")
             self.pretrained_dinow_twin.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
-        
-        self.head_out_features = list(self.pretrained_dinow_twin.student_head.children())[-1].out_features
+        # @TODO solve the issue, VIT already has a lat layer embedded, resnet should have one too
+        self.head_out_features = self.pretrained_dinow_twin.head_in_features
         self.pretrained_dinow_twin.requires_grad_(False)        
         self.linear = nn.Linear(self.head_out_features, self.num_cat)
 
     def forward(self, x):
         # Feed the data through pretrained barlow twins and prediciton layer
         out = self.pretrained_dinow_twin.student_backbone(x)
-        out = self.pretrained_dinow_twin.student_head(out)
+        # out = self.pretrained_dinow_twin.student_head(out)
         # out = F.softmax(self.pretrained_dinow_twin.student_head(out))
         # out = self.pretrained_dinow_twin.bt_proj(out)
         # out = self.linear(torch.cat((out1,out2),1))

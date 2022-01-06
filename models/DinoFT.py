@@ -34,7 +34,7 @@ class DinoFT(LightningModule):
     def forward(self, x):
         # Feed the data through pretrained barlow twins and prediciton layer
         out = self.pretrained_dino.student_backbone(x)
-        out = self.pretrained_dino.student_head(out)
+        # out = self.pretrained_dino.student_head(out)
         out = self.linear(out)
 
         return out

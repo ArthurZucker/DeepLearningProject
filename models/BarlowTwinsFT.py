@@ -26,12 +26,22 @@ class BarlowTwinsFT(LightningModule):
         if network_param.weight_checkpoint is not None: 
             self.barlow_twins.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
         self.barlow_twins.requires_grad_(False)
-        self.proj_channels = self.barlow_twins.proj_channels
-        self.linear = nn.Linear(self.proj_channels, self.num_cat)
+        self.use_backbone_features = network_param.use_backbone_features
+        
+        # @TODO fix the code correctly 
+        if network_param.use_backbone_features:
+            # if we want to test on the backbone features, remove the proj
+            self.in_features = self.barlow_twins.proj_channels
+            self.barlow_twins = self.barlow_twins.encoder
+            
+        self.linear = nn.Linear(self.in_features, self.num_cat)
 
     def forward(self, x):
         # Feed the data through pretrained barlow twins and prediciton layer
-        out, _  = self.barlow_twins(x, x)
+        if self.use_backbone_features:
+            out = self.barlow_twins(x)
+        else:
+            out, _  = self.barlow_twins(x, x)
         out     = self.linear(out)
         return out
 

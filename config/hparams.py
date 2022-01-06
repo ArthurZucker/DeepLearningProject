@@ -1,15 +1,14 @@
-from dataclasses import dataclass
-from typing import Dict, List, ClassVar, Optional, Any
-import numpy as np
-from simple_parsing.helpers import list_field, choice, dict_field
+import os
 import random
+from dataclasses import dataclass
+from os import path as osp
+from typing import Any, ClassVar, Dict, List, Optional
 
+import numpy as np
+import simple_parsing
 import torch
 import torch.optim
-
-import simple_parsing
-import os
-from os import path as osp
+from simple_parsing.helpers import Serializable, choice, dict_field, list_field
 
 """Dataclass allows to have arguments and easily use wandb's weep module.
 
@@ -18,17 +17,18 @@ An example of every datatype is provided. Some of the available arguments are al
 Most notably, the agent, dataset, optimizer and loss can all be specified and automatically parsed
 """
 
+
 @dataclass
-class Hparams:
+class Hparams(Serializable):
     """Hyperparameters of Your Model"""
 
     wandb_project: str = "deep-learning"  # name of the project
     wandb_entity: str = "dinow-twins"  # name of the wandb entity, here our team
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
-    arch: str = "DinowTwinsFT"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
+    arch: str = "Dino"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
     # datamodule to use, for now we only have one dataset, CIFAR10
     datamodule: str = "DinoDataModule"
-    dataset: Optional[str] = "DinoDatasetEval"
+    dataset: Optional[str] = "DinoDataset"
     agent: str = "trainer"  # agent to use for training
     seed_everything: Optional[int] = None  # seed for the whole run
     input_size: tuple = (32, 32)  # resize coefficients (H,W) for classic transforms
@@ -51,13 +51,14 @@ class Hparams:
     log_dino_freq: int = 1
     # path to save weights
     weights_path: str = osp.join(os.getcwd(), "weights")
-    
+
     # Logging attentino
     attention_threshold: float = 0.8
     nb_attention: int = 5
 
+
 @dataclass
-class DatasetParams:
+class DatasetParams(Serializable):
     """Dataset Parameters"""
 
     # Image size, assumes square images
@@ -68,29 +69,28 @@ class DatasetParams:
 
     # Dino params
     # number of crops/global_crops
-    n_crops: int = 5 #TODO already defined in the model.... 
+    n_crops: int = 5  # TODO already defined in the model....
     # number of global crops
     n_global_crops: int = 2
     # scale range of the crops
     global_crops_scale: List[int] = list_field(0.5, 1)
     local_crops_scale: List[float] = list_field(0.05, 0.5)
 
-    
-
-
 
 @dataclass
-class OptimizerParams:
+class OptimizerParams(Serializable):
     """Optimization parameters"""
 
     optimizer: str = "AdamW"  # Optimizer (adam, rmsprop)
-    lr: float = 4e-4  # learning rate, default=0.0002
+    lr: float = 5e-4  # learning rate, default=0.0002
+    min_lr: float = 5e-6
     lr_sched_type: str = "step"  # Learning rate scheduler type.
     z_lr_sched_step: int = 100000  # Learning rate schedule for z.
     lr_iter: int = 10000  # Learning rate operation iterations
     normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
     betas: List[float] = list_field(0.9, 0.999)  # beta1 for adam. default=(0.9, 0.999)
     max_epochs: int = 400  # This is redundant with the hparms max_epochs
+    warmup_epochs: int = 10  
     scheduler_parameters: Dict[str, Any] = dict_field(
         dict(
             base_value=0.9995,
@@ -101,10 +101,21 @@ class OptimizerParams:
             start_warmup_value=0,
         )
     )
+    lr_scheduler_parameters: Dict[str, Any] = dict_field(
+        dict(
+            base_value=0,
+            final_value=0,
+            max_epochs=0,
+            niter_per_ep=0,
+            warmup_epochs=10,
+            start_warmup_value=0,
+        )
+    )
+    
 
 
 @dataclass
-class BarlowConfig:
+class BarlowConfig(Serializable):
     """Hyperparameters specific to Barlow Twin Model.
     Used when the `arch` option is set to "Barlow" in the hparams
     """
@@ -118,10 +129,12 @@ class BarlowConfig:
     lmbda: float = 5e-3
 
     pretrained_encoder: bool = False
-
+    
+    use_backbone_features: bool = True
     # number of classes to use for the fine tuning task
     num_cat: int = 10
     # model checkpoint used in classification fine tuning
+    weight_checkpoint: Optional[str] = None
     weight_checkpoint: Optional[str] = osp.join(
         os.getcwd(),
         "wandb/test-deep-learning/lebgzheo/checkpoints/epoch=189-step=4749.ckpt",
@@ -129,12 +142,12 @@ class BarlowConfig:
 
 
 @dataclass
-class DinoConfig:
+class DinoConfig(Serializable):
     """Hyperparameters specific to the DINO Model.
     Used when the `arch` option is set to "Barlow" in the hparams
     """
 
-    student_backbone: str = "resnet50" 
+    student_backbone: str = "vit"
     teacher_backbone: str = student_backbone
     proj_layers: int = 3
     proj_channels: int = 2048
@@ -157,40 +170,37 @@ class DinoConfig:
     # number of classes to use for the fine tuning task
     num_cat: int = 10
 
-    weight_checkpoint: Optional[str] = osp.join(
-        os.getcwd(),
-        #"/home/arthur/Work/MVA-S1/DeepLearning/DeepLearningProject/weights/dino/epoch=191-step=37631.ckpt"
-        #"/home/arthur/Work/MVA-S1/DeepLearning/DeepLearningProject/weights/dino/epoch=386-step=75851.ckpt"
-        #"wandb/test-deep-learning/15nz03bf/checkpoints/epoch=124-step=24499.ckpt"
-        #"weights/DinoDataset-epoch=39-val_loss=0.00.ckpt"
-        #"weights/15nz0fepoch=78-step=15483.ckpt",
-    )
+    # weight_checkpoint: Optional[str] = osp.join(
+    #     os.getcwd(),  "weights/dino/epoch=386-step=75851.ckpt",
+    # )
 
     backbone_parameters: Optional[str] = None
 
     if student_backbone == "vit":
         backbone_parameters: Dict[str, Any] = dict_field(
             dict(
-                image_size = 32,
-                patch_size = 4,
-                num_classes = 0,
-                dim = 192,
-                depth = 4,
-                heads = 6,
-                mlp_dim = 1024,
-                dropout = 0.1,
-                emb_dropout = 0.1
+                image_size=32,
+                patch_size=4,
+                num_classes=0,
+                dim=192,
+                depth=4,
+                heads=6,
+                mlp_dim=1024,
+                dropout=0.1,
+                emb_dropout=0.1,
             )
-    )
+        )
+    
+
 
 @dataclass
-class DinoTwinConfig:
+class DinoTwinConfig(Serializable):
     """Hyperparameters specific to the DINO Model.
     Used when the `arch` option is set to "Barlow" in the hparams
     """
 
-    student_backbone: str = "vit"#choice("resnet50", "swinS", default="resnet50")
-    teacher_backbone: str = "vit"#choice("resnet50", "swinS", default="resnet50")
+    student_backbone: str = "resnet50"  # choice("resnet50", "swinS", default="resnet50")
+    teacher_backbone: str = student_backbone  # choice("resnet50", "swinS", default="resnet50")
     proj_layers: int = 3
     proj_channels: int = 2048
     bottleneck_dim: int = 256
@@ -209,8 +219,7 @@ class DinoTwinConfig:
         0.04  # would be different from techer temp if we used a warmup for this param
     )
     center_momentum: float = 0.9  # Default 0.9
-    
-    
+
     # barlow twin scale
     lmbda: float = 5e-3
 
@@ -218,27 +227,29 @@ class DinoTwinConfig:
     bt_beta: float = 5e-3 * 0.5
     # number of classes to use for the fine tuning task
     num_cat: int = 10
+    backbone_parameters: Dict[str, Any] = None
     if student_backbone == "vit":
         backbone_parameters: Dict[str, Any] = dict_field(
             dict(
-                image_size = 32,
-                patch_size = 4,
-                num_classes = 0,
-                dim = 192,
-                depth = 4,
-                heads = 6,
-                mlp_dim = 1024,
-                dropout = 0.1,
-                emb_dropout = 0.1
+                image_size=32,
+                patch_size=4,
+                num_classes=0,
+                dim=192,
+                depth=4,
+                heads=6,
+                mlp_dim=1024,
+                dropout=0.1,
+                emb_dropout=0.1,
             )
-    )
+        )
 
     weight_checkpoint: Optional[str] = osp.join(
-        os.getcwd(),"wandb/deep-learning/380s0yhd/checkpoints/epoch=229-step=89929.ckpt",
+        os.getcwd(),  "weights/dinowtwins_2heads/epoch=68-step=13523.ckpt",
     )
 
+
 @dataclass
-class Parameters:
+class Parameters(Serializable):
     """base options."""
 
     # Dataset parameters.
@@ -256,11 +267,11 @@ class Parameters:
 
         # Set render number of channels
         if "BarlowTwins" in self.hparams.arch:
-            self.network_param: BarlowConfig    = BarlowConfig()
+            self.network_param: BarlowConfig = BarlowConfig()
         elif "DinowTwins" in self.hparams.arch:
-            self.network_param: DinoTwinConfig  = DinoTwinConfig()
-        elif  "Dino" == self.hparams.arch or "DinoFT" == self.hparams.arch:
-            self.network_param: DinoConfig      = DinoConfig()
+            self.network_param: DinoTwinConfig = DinoTwinConfig()
+        elif "Dino" == self.hparams.arch or "DinoFT" == self.hparams.arch:
+            self.network_param: DinoConfig = DinoConfig()
         # Set random seed
         if self.hparams.seed_everything is None:
             self.hparams.seed_everything = random.randint(1, 10000)
