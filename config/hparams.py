@@ -25,10 +25,10 @@ class Hparams:
     wandb_project: str = "deep-learning"  # name of the project
     wandb_entity: str = "dinow-twins"  # name of the wandb entity, here our team
     save_dir: str = osp.join(os.getcwd(), "wandb")  # directory to save wandb outputs
-    arch: str = "DinowTwins"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
+    arch: str = "DinowTwinsFT"  # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinowTwins", default="BarlowTwins")  # training method, either Barlow, Dino, or DinowTwin
     # datamodule to use, for now we only have one dataset, CIFAR10
     datamodule: str = "DinoDataModule"
-    dataset: Optional[str] = "DinoDataset"
+    dataset: Optional[str] = "DinoDatasetEval"
     agent: str = "trainer"  # agent to use for training
     seed_everything: Optional[int] = None  # seed for the whole run
     input_size: tuple = (32, 32)  # resize coefficients (H,W) for classic transforms
@@ -53,7 +53,7 @@ class Hparams:
     weights_path: str = osp.join(os.getcwd(), "weights")
     
     # Logging attentino
-    attention_threshold: float = 0.6
+    attention_threshold: float = 0.8
     nb_attention: int = 5
 
 @dataclass
@@ -84,7 +84,7 @@ class OptimizerParams:
     """Optimization parameters"""
 
     optimizer: str = "AdamW"  # Optimizer (adam, rmsprop)
-    lr: float = 5e-4  # learning rate, default=0.0002
+    lr: float = 4e-4  # learning rate, default=0.0002
     lr_sched_type: str = "step"  # Learning rate scheduler type.
     z_lr_sched_step: int = 100000  # Learning rate schedule for z.
     lr_iter: int = 10000  # Learning rate operation iterations
@@ -234,8 +234,7 @@ class DinoTwinConfig:
     )
 
     weight_checkpoint: Optional[str] = osp.join(
-        os.getcwd(),
-        #"wandb/test-deep-learning/2z4ulgmh/checkpoints/epoch=79-step=15679.ckpt",
+        os.getcwd(),"wandb/deep-learning/380s0yhd/checkpoints/epoch=229-step=89929.ckpt",
     )
 
 @dataclass
@@ -258,9 +257,9 @@ class Parameters:
         # Set render number of channels
         if "BarlowTwins" in self.hparams.arch:
             self.network_param: BarlowConfig    = BarlowConfig()
-        elif "DinowTwins" == self.hparams.arch:
+        elif "DinowTwins" in self.hparams.arch:
             self.network_param: DinoTwinConfig  = DinoTwinConfig()
-        elif  "Dino" == self.hparams.arch:
+        elif  "Dino" == self.hparams.arch or "DinoFT" == self.hparams.arch:
             self.network_param: DinoConfig      = DinoConfig()
         # Set random seed
         if self.hparams.seed_everything is None:
