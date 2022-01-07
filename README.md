@@ -13,7 +13,9 @@ Our primary goal is to combine ideas from DINO and Barlow Twins to design a new 
 # DINO Architecture
 
 # DINO Twins Architecture
-
+<p align="center">
+  <img width="400" src="images\DinoTwins.drawio.png">
+</p>
 # Primary Results of Evaluation on CIFAR-10
 
 We evaluated the models on CIFAR-10 by freezing the weights of the backbone and applying a trainable linear layer on top. The Dino model and Dino Twins model using Resnet-50 used the same hyperparameters. \\
