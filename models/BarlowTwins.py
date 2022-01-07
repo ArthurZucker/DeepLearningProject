@@ -19,7 +19,7 @@ class BarlowTwins(LightningModule):
         # optimizer parameters
         self.optim_param = optim_param
         # projection layers
-        self.proj_channels = network_param.bt_proj_channels
+        self.proj_dim = network_param.bt_proj_dim
         # get backbone model and adapt it to the task
         self.encoder = get_net(
             network_param.encoder,network_param
@@ -35,14 +35,14 @@ class BarlowTwins(LightningModule):
         for i in range(3):
             if i == 0:
                 proj_layers.append(
-                    nn.Linear(self.in_features, self.proj_channels, bias=False)
+                    nn.Linear(self.in_features, self.proj_dim, bias=False)
                 )
             else:
                 proj_layers.append(
-                    nn.Linear(self.proj_channels, self.proj_channels, bias=False)
+                    nn.Linear(self.proj_dim, self.proj_dim, bias=False)
                 )
             if i < 2:
-                proj_layers.append(nn.BatchNorm1d(self.proj_channels))
+                proj_layers.append(nn.BatchNorm1d(self.proj_dim))
                 proj_layers.append(nn.ReLU(inplace=True))
 
         self.proj = nn.Sequential(*proj_layers)

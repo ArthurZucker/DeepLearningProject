@@ -10,8 +10,8 @@ from torch.optim import Adam
 from utils.agent_utils import get_net
 
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
-from models.losses.dinow_twins_loss import DinowTwinsLoss
-from models.DinowTwins import DinowTwins
+from models.losses.dino_twins_loss import DinowTwinsLoss
+from models.DinoTwins import DinowTwins
 from utils.scheduler import cosine_scheduler
 
 from models.custom_layers.l2norm import L2Norm

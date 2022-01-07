@@ -10,7 +10,7 @@ from torch.optim import Adam
 from utils.agent_utils import get_net
 
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
-from models.losses.dinow_twins_loss import DinowTwinsLoss
+from models.losses.dino_twins_loss import DinowTwinsLoss
 from utils.scheduler import cosine_scheduler, Cosine_Scheduler
 
 from models.custom_layers.l2norm import L2Norm
@@ -61,8 +61,8 @@ class DinowTwins(LightningModule):
         ] = nn.Identity()  # ^^^^^^^^^ this should also do the same
 
         # Make Projector/Head (default: 3-layers)
-        self.proj_channels = network_param.proj_channels
-        self.out_channels = network_param.out_channels
+        self.proj_dim = network_param.proj_dim
+        self.out_dim = network_param.out_dim
         self.proj_layers_num = network_param.proj_layers
         self.bottleneck_dim = network_param.bottleneck_dim
 
@@ -198,24 +198,24 @@ class DinowTwins(LightningModule):
 
     def _get_head(self):
         # first layer
-        proj_layers = [nn.Linear(self.head_in_features, self.proj_channels), nn.GELU()]
+        proj_layers = [nn.Linear(self.head_in_features, self.proj_dim), nn.GELU()]
         for i in range(self.proj_layers_num - 2):
-            proj_layers.append(nn.Linear(self.proj_channels, self.proj_channels))
+            proj_layers.append(nn.Linear(self.proj_dim, self.proj_dim))
             proj_layers.append(nn.GELU())
-        proj_layers += [nn.Linear(self.proj_channels, self.bottleneck_dim), nn.GELU()]
+        proj_layers += [nn.Linear(self.proj_dim, self.bottleneck_dim), nn.GELU()]
         # last layer
         proj_layers += [
             L2Norm(),
-            nn.Linear(self.bottleneck_dim, self.out_channels, bias=False),
+            nn.Linear(self.bottleneck_dim, self.out_dim, bias=False),
         ]
         return nn.Sequential(*proj_layers)
 
     def _get_bt_head(self):
         # first layer
-        proj_layers = [nn.Linear(self.head_in_features, self.proj_channels), nn.GELU()]
+        proj_layers = [nn.Linear(self.head_in_features, self.proj_dim), nn.GELU()]
         for i in range(self.proj_layers_num - 2):
-            proj_layers.append(nn.Linear(self.proj_channels, self.proj_channels))
+            proj_layers.append(nn.Linear(self.proj_dim, self.proj_dim))
             proj_layers.append(nn.GELU())
         # last layer
-        proj_layers.append(nn.Linear(self.proj_channels, self.out_channels, bias=False))
+        proj_layers.append(nn.Linear(self.proj_dim, self.out_dim, bias=False))
         return nn.Sequential(*proj_layers)
