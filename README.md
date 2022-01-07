@@ -12,9 +12,11 @@ Our primary goal is to combine ideas from DINO and Barlow Twins to design a new 
 
 # DINO Architecture
 
-# Primary Results of Evalutaion on CIFAR-10
+# DINO Twins Architecture
 
-We evaluated the models on CIFAR-10 by freezing the weights of the backbone and applying a trainable linear layer on top of it. The Dino model and Dino Twins model using Resnet-50 used the same hyperparameters. \\
+# Primary Results of Evaluation on CIFAR-10
+
+We evaluated the models on CIFAR-10 by freezing the weights of the backbone and applying a trainable linear layer on top. The Dino model and Dino Twins model using Resnet-50 used the same hyperparameters. \\
 Very few experiments have been performed with the ViT so far, and the batch size used for the ViT is 128 compared to 256 for the Resnet-50 based models. This is due to GPU constraints.
 
 | Model | CIFAR-10 Accuracy |
