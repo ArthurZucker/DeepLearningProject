@@ -58,7 +58,7 @@ class Dino(LightningModule):
         )  # self.teacher_backbone._modules[name_classif] = nn.Identity()
         self.teacher_backbone._modules[
             name_classif
-        ] = nn.Identity()  # ^^^^^^^^^ this should also do the same
+        ] = nn.Identity()  
 
         # Make Projector/Head (default: 3-layers)
         self.proj_dim = network_param.proj_dim
@@ -153,14 +153,20 @@ class Dino(LightningModule):
         self.momentum_schedule = cosine_scheduler(
             **self.optim_param.scheduler_parameters
         )
-        self.lr_scheduler_array = cosine_scheduler(
-            self.optim_param.lr * self.trainer.datamodule.batch_size / 256,
-            self.optim_param.min_lr,
-            self.optim_param.max_epochs,
-            len(self.trainer.datamodule.train_dataloader()),
-            self.optim_param.warmup_epochs,
-        )
-        scheduler = Cosine_Scheduler(optimizer, self.lr_scheduler_array)
+        #self.lr_scheduler_array = cosine_scheduler(
+        #    self.optim_param.lr * self.trainer.datamodule.batch_size / 256,
+        #    self.optim_param.min_lr,
+        #    self.optim_param.max_epochs,
+        #    len(self.trainer.datamodule.train_dataloader()),
+        #    self.optim_param.warmup_epochs,
+        #)
+        #scheduler = Cosine_Scheduler(optimizer, self.lr_scheduler_array)
+        scheduler = LinearWarmupCosineAnnealingLR(
+           optimizer, warmup_epochs=10, max_epochs=self.optim_param.max_epochs, 
+           warmup_start_lr=0.1*(self.optim_param.lr * self.trainer.datamodule.batch_size / 256),
+           eta_min = 0.1*(self.optim_param.lr * self.trainer.datamodule.batch_size / 256)
+         )
+        
         return [[optimizer], [scheduler]]
 
     def _get_loss(self, batch):
@@ -170,18 +176,6 @@ class Dino(LightningModule):
         loss = self.loss(student_out, teacher_out, self.current_epoch)
 
         return loss
-
-    # def _get_head(self):
-    #     # first layer
-    #     proj_layers = [nn.Linear(self.head_in_features, self.proj_dim)]
-    #     for i in range(self.proj_layers_num-3):
-    #         proj_layers.append(nn.GELU())
-    #         proj_layers.append(nn.Linear(self.proj_dim, self.proj_dim))
-    #     proj_layers += [nn.GELU(),nn.Linear(self.proj_dim, self.bottleneck_dim)]
-    #     # last layer
-    #     proj_layers += [L2Norm(),nn.Linear(self.bottleneck_dim, self.out_dim, bias=False)]
-
-    #   return nn.Sequential(*proj_layers)
 
     def _get_head(self):
         # first layer
