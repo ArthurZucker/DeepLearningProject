@@ -38,13 +38,14 @@ class Dino(LightningModule):
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
         self.loss = DinoLoss(network_param, optim_param.max_epochs)
 
+        if network_param.backbone_parameters is not None:
+            self.patch_size = network_param.backbone_parameters["patch_size"]
         # get backbone models
-        self.head_in_features = 0
         self.student_backbone = get_net(
-            network_param.student_backbone, network_param.backbone_parameters
+            network_param.backbone, network_param.backbone_parameters
         )
         self.teacher_backbone = get_net(
-            network_param.teacher_backbone, network_param.backbone_parameters
+            network_param.backbone, network_param.backbone_parameters
         )
 
         # Adapt models to the self-supervised task
