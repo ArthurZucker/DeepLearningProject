@@ -30,6 +30,9 @@ class DinowTwinsFT(LightningModule):
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
         self.loss = nn.CrossEntropyLoss()
 
+        if network_param.backbone_parameters is not None:
+            self.patch_size = network_param.backbone_parameters["patch_size"]
+            
         self.pretrained_dinow_twin = DinowTwins(network_param,optim_param) #BarlowTwins(network_param)
         if network_param.weight_checkpoint is not None: 
             print(f"Loaded chekpoint from {network_param.weight_checkpoint}")

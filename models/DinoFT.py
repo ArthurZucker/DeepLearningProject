@@ -22,14 +22,17 @@ class DinoFT(LightningModule):
         # Optimizer params
         self.optim_param = optim_param
 
+        if network_param.backbone_parameters is not None:
+            self.patch_size = network_param.backbone_parameters["patch_size"]
+            
         # Model
         self.pretrained_dino = Dino(network_param,optim_param) #BarlowTwins(network_param)
-        if network_param.weight_checkpoint is not None: 
+        if network_param.pretrained and network_param.weight_checkpoint is not None: 
             self.pretrained_dino.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
         
-        self.head_out_features = list(self.pretrained_dino.student_head.children())[0].out_features
+        self.head_out_features = self.pretrained_dino.head_in_features
         self.pretrained_dino.requires_grad_(False)        
-        self.linear = nn.Linear(2048, self.num_cat)
+        self.linear = nn.Linear(self.head_out_features, self.num_cat)
 
     def forward(self, x):
         # Feed the data through pretrained barlow twins and prediciton layer

@@ -14,7 +14,7 @@ class DinoLoss(nn.Module):
         self.student_temp = network_param.student_temp
         self.teacher_temp = network_param.teacher_temp
         #the centering operation requires tu update a buffer of centers
-        self.register_buffer("center", torch.zeros(1, network_param.out_channels))
+        self.register_buffer("center", torch.zeros(1, network_param.out_dim))
         
         # Without a warmup on the teacher temperature, training becomes unstable
         #To be reviewed and fixed

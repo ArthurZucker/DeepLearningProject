@@ -39,6 +39,7 @@ class DinowTwins(LightningModule):
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
         self.loss = DinowTwinsLoss(network_param, optim_param.max_epochs)
 
+        
         # get backbone models
         self.head_in_features = 0
         self.student_backbone = get_net(
