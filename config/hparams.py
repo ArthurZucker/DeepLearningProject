@@ -29,12 +29,12 @@ class Hparams:
     wandb_project         : str           = f"{'test'*testing}-deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "DinoFT"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    arch                  : str           = "Dino"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
     datamodule            : str           = "DinoDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
     # Moreover, the datasets are different depending on the task: SSL or Eval.
-    dataset               : Optional[str] = "DinoDatasetEval"       # dataset : has to correspond to a file name
+    dataset               : Optional[str] = "DinoDataset"       # dataset : has to correspond to a file name
     agent                 : str           = "trainer"           # agent used for training, only one is available now
     seed_everything       : Optional[int] = None                # seed for the whole run, if None a random seed will be selected
     
