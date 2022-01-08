@@ -5,17 +5,17 @@ Our primary goal is to combine ideas from DINO and Barlow Twins to design a new 
 
 ## Barlow Twins Architecture
 <p align="center">
-  <img width="400" src="images\BarlowTwins.png">
+  <img width="500" src="images\BarlowTwins.png">
 </p>
 
 ## DINO Architecture
 <p align="center">
-  <img width="400" src="images\DINO.drawio.png">
+  <img width="500" src="images\DINO.drawio.png">
 </p>
 
 ## DINO Twins Architecture
 <p align="center">
-  <img width="400" src="images\DinoTwins.drawio.png">
+  <img width="500" src="images\DinoTwins.drawio.png">
 </p>
 
 # Primary Results
