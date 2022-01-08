@@ -25,16 +25,16 @@ class Hparams:
     # ----------------------
     # Wandb Parameters
     # ----------------------
-    
-    wandb_project         : str           = "deep-learning"     # name of the project
+    testing               : bool          = True
+    wandb_project         : str           = f"{'test'*testing}-deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "Dino"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    arch                  : str           = "DinoFT"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
     datamodule            : str           = "DinoDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
     # Moreover, the datasets are different depending on the task: SSL or Eval.
-    dataset               : Optional[str] = "DinoDataset"       # dataset : has to correspond to a file name
+    dataset               : Optional[str] = "DinoDatasetEval"       # dataset : has to correspond to a file name
     agent                 : str           = "trainer"           # agent used for training, only one is available now
     seed_everything       : Optional[int] = None                # seed for the whole run, if None a random seed will be selected
     
@@ -132,9 +132,7 @@ class DinoConfig:
     """Hyperparameters specific to the DINO Model.
     Used when the `arch` option is set to "Barlow" in the hparams
     """
-
-    student_backbone          : str         = "vit"
-    teacher_backbone          : str         = student_backbone
+    backbone                   : str         = "vit"
     proj_layers               : int         = 3
     proj_dim                  : int         = 2048
     bottleneck_dim            : int         = 256
@@ -149,15 +147,13 @@ class DinoConfig:
     warmup_teacher_temp       : float       = 0.04      # (starting teacher temp) different from teacher temp only if we use a warmup
     center_momentum           : float       = 0.9       # Default 0.9
     num_cat                   : int         = 10        # number of classes to use for the fine tuning task
+    pretrained                : bool        = False  
 
-    weight_checkpoint: Optional[str] = osp.join(
-        os.getcwd(),  
-        #"weights/dino/epoch=386-step=75851.ckpt",
-    ) # model checkpoint used in evaluation phase
 
+    weight_checkpoint: Optional[str] = osp.join(os.getcwd(),"weights/dino/epoch=386-step=75851.ckpt",) # model checkpoint used in evaluation phase
     backbone_parameters: Optional[str] = None
 
-    if student_backbone == "vit":
+    if backbone == "vit":
         backbone_parameters: Dict[str, Any]    = dict_field(
                 dict(
                     image_size  = 32,
