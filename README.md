@@ -22,7 +22,7 @@ Our primary goal is to combine ideas from DINO and Barlow Twins to design a new 
 
 We first trained the models on [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) in a self-supervised setting. Then evaluated them on the same dataset by freezing the weights of the backbone and applying a trainable linear layer on top for classification. The Dino Resnet-50 and Dino-Twins Resnet-50 models were trained with the same hyperparameters.<br />
 Very few experiments have been performed with the ViT so far, and the batch size used for the ViT is 128 compared to 256 for the Resnet-50 based models. This is due to GPU constraints.<br />
-Our work is still in progress, so the results are subject to changing. Particularly those of the DINO model, which are far from what would be expected.<br />
+Our work is still in progress, so the results are subject to change. Particularly those of the DINO model, which are far from what would be expected.<br />
 
 | Model | CIFAR-10 Accuracy |
 | --------------- | --------------- |
