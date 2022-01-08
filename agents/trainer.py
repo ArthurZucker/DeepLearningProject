@@ -1,19 +1,13 @@
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import (
-    ModelCheckpoint,
-    RichProgressBar,
-    LearningRateMonitor,
-)
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from utils.callbacks import (
-    LogBarlowPredictionsCallback,
-    LogBarlowCCMatrixCallback,
-    LogMetricsCallBack,
-    LogDinoImagesCallback,
-    LogDinoDistribCallback,
-    LogDinowCCMatrixCallback,
-    LogAttentionMapsCallback
-)
+import wandb
+from pytorch_lightning.callbacks import (LearningRateMonitor, ModelCheckpoint,
+                                         RichProgressBar)
+
+from utils.callbacks import (LogAttentionMapsCallback,
+                             LogBarlowCCMatrixCallback,
+                             LogBarlowPredictionsCallback,
+                             LogDinoImagesCallback, LogDinowCCMatrixCallback,
+                             LogMetricsCallBack)
 
 from agents.BaseTrainer import BaseTrainer
 
@@ -24,38 +18,67 @@ class trainer(BaseTrainer):
 
     def run(self):
         super().run()
-
         trainer = pl.Trainer(
             logger=self.wb_run,  # W&B integration
-            callbacks=[
-                #  ModelCheckpoint(
-                #      monitor="val/loss",
-                #     mode="min",
-                #    filename=str(self.config.dataset) + "-{epoch:02d}-{val_loss:.2f}",
-                #   every_n_epochs=20,
-                #  verbose=True,
-                #),  # our model checkpoint callback
-                RichProgressBar(),
-                LearningRateMonitor(),
-                LogDinoImagesCallback(self.config.log_pred_freq),
-                LogDinoDistribCallback(self.config.log_dino_freq),
-                LogAttentionMapsCallback(self.config.attention_threshold,self.config.nb_attention),
-                # LogMetricsCallBack(),
-                # LogBarlowPredictionsCallback(self.config.log_pred_freq) , # FIXME only add these if we are using barlow
-                # LogBarlowCCMatrixCallback(self.config.log_ccM_freq) # FIXME memory error had to remove it
-                # LogDinowCCMatrixCallback(self.config.log_dino_freq)
-            ],  # logging of sample predictions
+            callbacks=self.get_callbacks(),
             gpus=self.config.gpu,  # use all available GPU's
             max_epochs=self.config.max_epochs,  # number of epochs
             precision=self.config.precision,  # train in half precision
             accelerator="auto",
             check_val_every_n_epoch=self.config.val_freq,
             fast_dev_run=self.config.dev_run,
-            # accumulate_grad_batches=self.config.accumulate_size,
+            accumulate_grad_batches=self.config.accumulate_size,
             log_every_n_steps=1,
-            default_root_dir=f"{self.config.weights_path}/{self.wb_run.name}",
-            # limit_train_batches=4,
-            # detect_anomaly = True,
+            default_root_dir=f"{self.wb_run._save_dir}/{wandb.run.name}",
+
         )
         trainer.logger = self.wb_run
         trainer.fit(self.model, datamodule=self.datamodule)
+
+    def get_callbacks(self):
+        
+        callbacks = [RichProgressBar(),LearningRateMonitor()]
+        
+        if "Barlo" in self.config.arch :
+            callbacks += [LogBarlowPredictionsCallback(self.config.log_pred_freq),LogBarlowCCMatrixCallback(self.config.log_ccM_freq)]
+            
+        elif  self.config.arch == "Dino" or self.config.arch == "DinoTwins":
+            callbacks += [LogDinoImagesCallback(self.config.log_pred_freq)]
+
+        if self.config.arch == "DinoTwins":
+            callbacks += [LogDinowCCMatrixCallback(self.config.log_dino_freq)]
+            
+        if self.encoder == "vit":
+            callbacks += [LogAttentionMapsCallback(self.config.attention_threshold,self.config.nb_attention)]
+            
+        if "FT" in self.config.datamodule :
+            callbacks += [LogMetricsCallBack()]
+            self.run.define_metric("val/accuracy", summary="max")
+            monitor        = "val/accuracy"
+            mode           = "max"
+        else:
+            monitor        = "val/loss"
+            mode           = "min"
+            
+        if "Dino" in self.config.arch :
+            save_top_k     = -1
+            every_n_epochs = 20
+        else:
+            save_top_k     = 5
+            every_n_epochs = 1
+        
+        if self.config.testing: # don't need to save if we are just testing
+            save_top_k = 0
+            
+            
+        callbacks += [ModelCheckpoint(
+                        monitor        = monitor,
+                        mode           = mode,
+                        filename       = "{epoch:02d}-{val/loss:.2f}",
+                        verbose        = True,
+                        dirpath        = self.config.weights_path+f"/{str(wandb.run.name)}",
+                        save_top_k     = save_top_k,
+                        every_n_epochs = every_n_epochs
+                )]  # our model checkpoint callback
+
+        return callbacks      

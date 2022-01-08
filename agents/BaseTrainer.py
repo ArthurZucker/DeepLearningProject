@@ -6,6 +6,7 @@ class BaseTrainer:
     def __init__(self, config, run) -> None:
         self.config = config.hparams
         self.wb_run = run
+        self.encoder = config.network_param.backbone
         self.model = get_net(
             config.hparams.arch, config.network_param, config.optim_param
         )
@@ -38,3 +39,5 @@ class BaseTrainer:
             )
             trainer.logger = self.wb_run
             trainer.tune(self.model, datamodule=self.datamodule)
+    
+    
