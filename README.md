@@ -10,12 +10,12 @@ Our primary goal is to combine ideas from DINO and Barlow Twins to design a new 
 
 ## DINO Architecture
 <p align="center">
-  <img width="500" src="images\DINO.drawio.png">
+  <img width="500" src="images\DINO.drawio.svg">
 </p>
 
 ## DINO Twins Architecture
 <p align="center">
-  <img width="500" src="images\DinoTwins.drawio.png">
+  <img width="500" src="images\DinoTwins.drawio.svg">
 </p>
 
 # Primary Results
