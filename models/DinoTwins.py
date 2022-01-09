@@ -26,9 +26,9 @@ class DinowTwins(LightningModule):
         # initialize current epoch/iteration
         self.curr_iteration = 0
         # initialize lr_scheduler array
-        #self.lr_scheduler_array = cosine_scheduler(
+        # self.lr_scheduler_array = cosine_scheduler(
         #    **optim_param.lr_scheduler_parameters
-        #)
+        # )
         # optimizer/scheduler parameters
         self.optim_param = optim_param
         if network_param.backbone_parameters is not None:
@@ -39,7 +39,6 @@ class DinowTwins(LightningModule):
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
         self.loss = DinowTwinsLoss(network_param, optim_param.max_epochs)
 
-        
         # get backbone models
         self.head_in_features = 0
         self.student_backbone = get_net(
@@ -57,9 +56,7 @@ class DinowTwins(LightningModule):
         ] = (
             nn.Identity()
         )  # self.teacher_backbone._modules[name_classif] = nn.Identity()
-        self.teacher_backbone._modules[
-            name_classif
-        ] = nn.Identity()  
+        self.teacher_backbone._modules[name_classif] = nn.Identity()
 
         # Make Projector/Head (default: 3-layers)
         self.proj_dim = network_param.proj_dim
@@ -133,7 +130,6 @@ class DinowTwins(LightningModule):
         self.log("train/dino_loss", dino_loss)
         self.log("train/bt_loss", bt_loss)
 
-
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -171,19 +167,23 @@ class DinowTwins(LightningModule):
             **self.optim_param.scheduler_parameters
         )
 
-        #self.lr_scheduler_array = cosine_scheduler(
+        # self.lr_scheduler_array = cosine_scheduler(
         #    self.optim_param.lr * self.trainer.datamodule.batch_size / 256,
         #    self.optim_param.min_lr,
         #    self.optim_param.max_epochs,
         #    len(self.trainer.datamodule.train_dataloader()),
         #    self.optim_param.warmup_epochs,
-        #)
-        #lr_scheduler = Cosine_Scheduler(optimizer, self.lr_scheduler_array)
+        # )
+        # lr_scheduler = Cosine_Scheduler(optimizer, self.lr_scheduler_array)
         scheduler = LinearWarmupCosineAnnealingLR(
-           optimizer, warmup_epochs=10, max_epochs=self.optim_param.max_epochs, 
-           warmup_start_lr=0.1*(self.optim_param.lr * self.trainer.datamodule.batch_size / 256),
-           eta_min = 0.1*(self.optim_param.lr * self.trainer.datamodule.batch_size / 256)
-         )
+            optimizer,
+            warmup_epochs=10,
+            max_epochs=self.optim_param.max_epochs,
+            warmup_start_lr=0.1
+            * (self.optim_param.lr * self.trainer.datamodule.batch_size / 256),
+            eta_min=0.1
+            * (self.optim_param.lr * self.trainer.datamodule.batch_size / 256),
+        )
         return [[optimizer], [scheduler]]
 
     def _get_loss(self, batch):

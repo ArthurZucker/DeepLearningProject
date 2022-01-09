@@ -132,7 +132,7 @@ class DinoConfig:
     """Hyperparameters specific to the DINO Model.
     Used when the `arch` option is set to "Barlow" in the hparams
     """
-    backbone                   : str         = "vit"
+    backbone                  : str         = "vit"
     proj_layers               : int         = 3
     proj_dim                  : int         = 2048
     bottleneck_dim            : int         = 256
@@ -150,7 +150,7 @@ class DinoConfig:
     pretrained                : bool        = False  
 
 
-    weight_checkpoint: Optional[str] = osp.join(os.getcwd(),"weights/dino/epoch=386-step=75851.ckpt",) # model checkpoint used in evaluation phase
+    weight_checkpoint  : Optional[str] = osp.join(os.getcwd(),"weights/dino/epoch=386-step=75851.ckpt",) # model checkpoint used in evaluation phase
     backbone_parameters: Optional[str] = None
 
     if backbone == "vit":
@@ -175,8 +175,7 @@ class DinoTwinConfig:
     Used when the `arch` option is set to "Barlow" in the hparams
     """
 
-    student_backbone            : str         = "resnet50"
-    teacher_backbone            : str         = student_backbone
+    backbone                    : str         = "vit"
     proj_layers                 : int         = 3
     proj_dim                    : int         = 2048
     bottleneck_dim              : int         = 256
@@ -197,7 +196,7 @@ class DinoTwinConfig:
     bt_beta                     : float             = 5e-3 * 0.5    # scaling of the barlow twins loss. Default is meant to get bt_loss = 1/2 * Dino_loss at the begining of training
     num_cat                     : int               = 10            # number of classes to use for the fine tuning task
     backbone_parameters         : Dict[str, Any]    = None
-    if  student_backbone == "vit":
+    if  backbone == "vit":
         backbone_parameters     : Dict[str, Any]    = dict_field(
             dict(
                 image_size      = 32,

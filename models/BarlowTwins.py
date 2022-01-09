@@ -28,25 +28,18 @@ class BarlowTwins(LightningModule):
         name_classif = list(self.encoder.named_children())[-1][0]
         self.encoder._modules[name_classif] = nn.Identity()
 
-        # Make Projector (3-layers)
+        self.proj = self.get_head()
         
-        proj_layers = []
-
-        for i in range(3):
-            if i == 0:
-                proj_layers.append(
-                    nn.Linear(self.in_features, self.proj_dim, bias=False)
-                )
-            else:
-                proj_layers.append(
-                    nn.Linear(self.proj_dim, self.proj_dim, bias=False)
-                )
-            if i < 2:
-                proj_layers.append(nn.BatchNorm1d(self.proj_dim))
-                proj_layers.append(nn.ReLU(inplace=True))
-
-        self.proj = nn.Sequential(*proj_layers)
-
+    def get_head(self):
+        # first layer
+        proj_layers = [nn.Linear(self.in_features, self.proj_dim, bias=False), nn.GELU()]
+        for i in range(self.nb_proj_layers):
+            proj_layers.append(nn.BatchNorm1d(self.proj_dim))
+            proj_layers.append(nn.ReLU(inplace=True))
+            proj_layers.append(nn.Linear(self.proj_dim, self.proj_dim, bias=False))
+            
+        return nn.Sequential(*proj_layers)
+    
     def forward(self, x1, x2):
         # Feeding the data through the encoder and projector
         z1 = self.proj(self.encoder(x1))
