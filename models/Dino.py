@@ -25,9 +25,6 @@ class Dino(LightningModule):
 
         # initialize current epoch/iteration
         self.curr_iteration = 0
-
-        if network_param.backbone_parameters is not None:
-            self.patch_size = network_param.backbone_parameters["patch_size"]
         
         # optimizer/scheduler parameters
         self.optim_param = optim_param
