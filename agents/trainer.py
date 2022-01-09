@@ -70,7 +70,7 @@ class trainer(BaseTrainer):
         else:
             monitor = "val/loss"
             mode = "min"
-        self.wb_run.define_metric(monitor, summary=mode)
+        wandb.define_metric(monitor, summary=mode)
         if "Dino" in self.config.arch:
             save_top_k = -1
             every_n_epochs = 20
