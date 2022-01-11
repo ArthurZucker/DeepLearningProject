@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from torch.optim import Adam
 from utils.agent_utils import get_net
 
-from models.losses.barlow_twins import BarlowTwinsLoss
+from models.losses.barlow_twins import CrossCorrelationMatrixLoss
 from models.optimizers.lars import LARS
 
 class BarlowTwins(LightningModule):
@@ -13,7 +13,7 @@ class BarlowTwins(LightningModule):
         """method used to define our model parameters"""
         super().__init__()
 
-        self.loss = BarlowTwinsLoss
+        self.loss = CrossCorrelationMatrixLoss(config.lmbda)
         # optimizer parameters
         self.lr = config.lr
         self.log_pred_freq = config.log_pred_freq
@@ -77,17 +77,17 @@ class BarlowTwins(LightningModule):
 
     def configure_optimizers(self):
         """defines model optimizer"""
-        optimizer = LARS(self.parameters(), lr=self.lr)
-        scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer, warmup_epochs=10, max_epochs=40
-        )
-        return [[optimizer], [scheduler]]
+        optimizer = Adam(self.parameters(), lr=self.lr)
+        # scheduler = LinearWarmupCosineAnnealingLR(
+        #     optimizer, warmup_epochs=10, max_epochs=40
+        # )
+        return optimizer#[[optimizer], [scheduler]]
 
     def _get_loss(self, batch):
         """convenience function since train/valid/test steps are similar"""
         x1, x2 = batch
         z1, z2 = self(x1, x2)
 
-        loss = self.loss(z1, z2, self.lmbda)
+        loss = self.loss(z1, z2)
 
         return loss

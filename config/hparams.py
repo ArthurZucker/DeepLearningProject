@@ -27,7 +27,7 @@ class Hparams:
     #method 
     method : str= "barlow"
     # seed for the whole run
-    seed_everything: Optional[int] = None
+    seed_everything: Optional[int] = 6902
     # project  
     wandb_project: str = "test-deep-learning"
     # wandb entity
@@ -35,7 +35,7 @@ class Hparams:
     # resize coefficients for H and w
     input_size: tuple = (32, 32)
     # learning rate
-    lr: float = 0.4
+    lr: float = 0.0003
     # agent to use for training
     agent: str = "trainer"
     # architecture to use
@@ -59,7 +59,7 @@ class Hparams:
     # developpment mode, only run 1 batch of train val and test
     dev_run: bool = False
     # gradient accumulation batch size
-    accumulate_size: int = 512
+    accumulate_size: int = 2048
     # batch size for training
     batch_size: int = 2048
     # maximum number of epochs
@@ -76,11 +76,12 @@ class Hparams:
     global_crops_scale: List[int]   = list_field(0.5,1)
     local_crops_scale:  List[float] = list_field(0.08, 0.5)
     # lambda coefficient used for FIXME ??????????
-    lmbda: float = 0.05
+    lmbda: float = 0.005
     # path to download pascal voc
     asset_path: str = osp.join(os.getcwd(), "assets")
     #log_pred_freq
     log_pred_freq: int = 10
+    
 @dataclass
 class DatasetParams:
     """Dataset Parameters"""
@@ -98,13 +99,13 @@ class OptimizerParams:
     """Optimization parameters"""
 
     optimizer: str = "adam"  # Optimizer (adam, rmsprop)
-    lr: float = 0.0001  # learning rate, default=0.0002
+    lr: float = 0.0003  # learning rate, default=0.0002
     lr_sched_type: str = "step"  # Learning rate scheduler type.
     z_lr_sched_step: int = 100000  # Learning rate schedule for z.
     lr_iter: int = 10000  # Learning rate operation iterations
     normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
     beta1: float = 0.0  # beta1 for adam. default=0.5
-    batchSize: int = 4  # input batch size
+    batchSize: int = 2048  # input batch size
 
         
 @dataclass
@@ -122,7 +123,7 @@ class BarlwoConfig:
     global_crops_scale: List[int]   = list_field(0.5,1)
     local_crops_scale:  List[float] = list_field(0.08, 0.5)
     # lambda coefficient used for FIXME ??????????
-    lmbda: float = 0.05
+    lmbda: float = 0.005
 
 @dataclass
 class DinoConfig:
