@@ -33,9 +33,8 @@ class trainer(BaseTrainer):
             accelerator="auto",
             check_val_every_n_epoch=self.config.val_freq,
             fast_dev_run=self.config.dev_run,
-            accumulate_grad_batches=self.config.accumulate_size,
+            # accumulate_grad_batches=self.config.accumulate_size,
             log_every_n_steps=1,
-            default_root_dir=f"{self.wb_run._save_dir}/{wandb.run.name}",
         )
         trainer.logger = self.wb_run
         trainer.fit(self.model, datamodule=self.datamodule)
@@ -44,7 +43,7 @@ class trainer(BaseTrainer):
 
         callbacks = [RichProgressBar(), LearningRateMonitor()]
         
-        if "BarloTwins" == self.config.arch :
+        if "BarlowTwins" == self.config.arch :
             callbacks += [
                 LogBarlowPredictionsCallback(self.config.log_pred_freq),
                 LogBarlowCCMatrixCallback(self.config.log_ccM_freq),

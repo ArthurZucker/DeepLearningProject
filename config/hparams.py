@@ -29,14 +29,14 @@ class Hparams:
     wandb_project         : str           = f"{'test'*testing}-deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "BarlowTwinsFT"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    arch                  : str           = "BarlowTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
     datamodule            : str           = "BarlowTwinsDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
     # Moreover, the datasets are different depending on the task: SSL or Eval.
-    dataset               : Optional[str] = "BarlowTwinsDatasetEval"       # dataset : has to correspond to a file name
+    dataset               : Optional[str] = "BarlowTwinsDataset"       # dataset : has to correspond to a file name
     agent                 : str           = "trainer"           # agent used for training, only one is available now
-    seed_everything       : Optional[int] =  None               # seed for the whole run, if None a random seed will be selected, 6902 to use for the bugged run
+    seed_everything       : Optional[int] =  6902               # seed for the whole run, if None a random seed will be selected, 6902 to use for the bugged run
     
     # --------------------
     # Training parameters
@@ -47,7 +47,7 @@ class Hparams:
     precision             : int           = 32      # precision
     val_freq              : int           = 1       # validation frequency
     dev_run               : bool          = False   # developpment mode, only run 1 batch of train val and test
-    accumulate_size       : int           = 2048    # gradient accumulation batch size
+    accumulate_size       : int           = 1024    # gradient accumulation batch size
     max_epochs            : int           = 400     # number of epochs
     asset_path            : str           = osp.join(os.getcwd(), "assets") # path to download data
 
@@ -68,7 +68,7 @@ class DatasetParams:
 
     num_workers        : int         = 20           # number of workers for dataloadersint
     input_size         : tuple       = (32, 32)     # image_size
-    batch_size         : int         = 256          # batch_size
+    batch_size         : int         = 512          # batch_size
     asset_path         : str         = osp.join(os.getcwd(), "assets")  # path to download the dataset
     n_crops            : int         = 5            # number of crops
     n_global_crops     : int         = 2            # number of global crops
@@ -120,11 +120,10 @@ class BarlowConfig:
     backbone     : str = choice("resnet50", "swinS", default="resnet50") # backbone encoder for barlow twins
     # lambda coefficient used to scale the scale of the redundancy loss so it doesn't overwhelm the invariance loss
     lmbda                 : float         = 0.005
-    pretrained_encoder    : bool          = False
-    use_backbone_features : bool          = False
+    use_backbone_features : bool          = True    # if set to false, the barlow projections are used
     num_cat               : int           = 10     # number of classes to use for the fine tuning task
     nb_proj_layers        : int           = 3
-    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(),"epoch=39-step=999.ckpt") # model checkpoint used in evaluation phase
+    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(),"epoch=29-step=749.ckpt") # model checkpoint used in evaluation phase
 
 
 @dataclass
