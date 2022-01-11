@@ -43,7 +43,8 @@ class Hparams:
     # encoder for barlow
     encoder: str = "resnet50"
     # data module
-    datamodule: str = "BarlowTwinsCIFAR10DataModule"
+    datamodule: str = "BarlowTwinsDataModule"
+    dataset: str = "BarlowTwinsDataset"
     # number of workers for dataloaders
     num_workers: int = 20
     # tune the model on first run
@@ -55,7 +56,7 @@ class Hparams:
     # precision
     precision: int = 32
     # validation frequency
-    val_freq: int = 10
+    val_freq: int = 1
     # developpment mode, only run 1 batch of train val and test
     dev_run: bool = False
     # gradient accumulation batch size
@@ -101,11 +102,7 @@ class OptimizerParams:
     optimizer: str = "adam"  # Optimizer (adam, rmsprop)
     lr: float = 0.0003  # learning rate, default=0.0002
     lr_sched_type: str = "step"  # Learning rate scheduler type.
-    z_lr_sched_step: int = 100000  # Learning rate schedule for z.
-    lr_iter: int = 10000  # Learning rate operation iterations
-    normal_lr_sched_step: int = 100000  # Learning rate schedule for normal.
-    beta1: float = 0.0  # beta1 for adam. default=0.5
-    batchSize: int = 2048  # input batch size
+
 
         
 @dataclass

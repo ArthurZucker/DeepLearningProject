@@ -1,14 +1,10 @@
-import torch.nn as nn
+from pytorch_lightning import LightningModule
 from torchvision.models import resnet50
-from models.base import BASE_LitModule
 
-# TODO implement with lightning
 
-class Resnet50(BASE_LitModule):
+class Resnet50(LightningModule):
     def __init__(self, config) -> None:
-        super(Resnet50, self).__init__(config)
-        
-        self.config = config
+        super().__init__()
         self.net = resnet50(pretrained=False)
 
     def forward(self, x):
