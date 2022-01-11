@@ -43,7 +43,7 @@ class trainer(BaseTrainer):
     def get_callbacks(self):
 
         callbacks = [RichProgressBar(), LearningRateMonitor()]
-
+        return callbacks
         if "Barlo" in self.config.arch:
             callbacks += [
                 LogBarlowPredictionsCallback(self.config.log_pred_freq),

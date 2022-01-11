@@ -20,9 +20,11 @@ class BarlowTwins(LightningModule):
         self.optim_param = optim_param
         # projection layers
         self.proj_dim = network_param.bt_proj_dim
+        
+        self.nb_proj_layers = network_param.nb_proj_layers
         # get backbone model and adapt it to the task
         self.encoder = get_net(
-            network_param.encoder,network_param
+            network_param.backbone,network_param
         )  # TODO add encoder name to the hparams, use getnet() to get the encoder
         self.in_features = list(self.encoder.modules())[-1].in_features
         name_classif = list(self.encoder.named_children())[-1][0]
@@ -32,8 +34,8 @@ class BarlowTwins(LightningModule):
         
     def get_head(self):
         # first layer
-        proj_layers = [nn.Linear(self.in_features, self.proj_dim, bias=False), nn.GELU()]
-        for i in range(self.nb_proj_layers):
+        proj_layers = [nn.Linear(self.in_features, self.proj_dim, bias=False)]
+        for i in range(self.nb_proj_layers-1):
             proj_layers.append(nn.BatchNorm1d(self.proj_dim))
             proj_layers.append(nn.ReLU(inplace=True))
             proj_layers.append(nn.Linear(self.proj_dim, self.proj_dim, bias=False))
