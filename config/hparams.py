@@ -29,14 +29,14 @@ class Hparams:
     wandb_project         : str           = f"{'test'*testing}-deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "BarlowTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    arch                  : str           = "BarlowTwinsFT"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
     datamodule            : str           = "BarlowTwinsDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
     # Moreover, the datasets are different depending on the task: SSL or Eval.
-    dataset               : Optional[str] = "BarlowTwinsDataset"       # dataset : has to correspond to a file name
+    dataset               : Optional[str] = "BarlowTwinsDatasetEval"       # dataset : has to correspond to a file name
     agent                 : str           = "trainer"           # agent used for training, only one is available now
-    seed_everything       : Optional[int] = 6902                # seed for the whole run, if None a random seed will be selected
+    seed_everything       : Optional[int] =  None               # seed for the whole run, if None a random seed will be selected, 6902 to use for the bugged run
     
     # --------------------
     # Training parameters
@@ -68,7 +68,7 @@ class DatasetParams:
 
     num_workers        : int         = 20           # number of workers for dataloadersint
     input_size         : tuple       = (32, 32)     # image_size
-    batch_size         : int         = 2048          # batch_size
+    batch_size         : int         = 256          # batch_size
     asset_path         : str         = osp.join(os.getcwd(), "assets")  # path to download the dataset
     n_crops            : int         = 5            # number of crops
     n_global_crops     : int         = 2            # number of global crops
@@ -116,16 +116,15 @@ class BarlowConfig:
     Used when the `arch` option is set to "Barlow" in the hparams
     """
 
-    bt_proj_dim : int = 2048  # number of channels to use for projection
+    bt_proj_dim  : int = 2048  # number of channels to use for projection
     backbone     : str = choice("resnet50", "swinS", default="resnet50") # backbone encoder for barlow twins
     # lambda coefficient used to scale the scale of the redundancy loss so it doesn't overwhelm the invariance loss
-    lmbda                 : float         = 5e-3
+    lmbda                 : float         = 0.005
     pretrained_encoder    : bool          = False
-    use_backbone_features : bool          = True
+    use_backbone_features : bool          = False
     num_cat               : int           = 10     # number of classes to use for the fine tuning task
-    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(),)
     nb_proj_layers        : int           = 3
-    # "wandb/test-deep-learning/lebgzheo/checkpoints/epoch=189-step=4749.ckpt", # model checkpoint used in evaluation phase
+    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(),"epoch=39-step=999.ckpt") # model checkpoint used in evaluation phase
 
 
 @dataclass
@@ -148,10 +147,10 @@ class DinoConfig:
     warmup_teacher_temp       : float       = 0.04      # (starting teacher temp) different from teacher temp only if we use a warmup
     center_momentum           : float       = 0.9       # Default 0.9
     num_cat                   : int         = 10        # number of classes to use for the fine tuning task
-    pretrained                : bool        = False  
+    pretrained                : bool        = True  
 
 
-    weight_checkpoint  : Optional[str] = osp.join(os.getcwd(),"weights/dino/epoch=386-step=75851.ckpt",) # model checkpoint used in evaluation phase
+    weight_checkpoint  : Optional[str] = osp.join(os.getcwd(),"epoch=39-step=999.ckpt") # model checkpoint used in evaluation phase
     backbone_parameters: Optional[str] = None
 
     if backbone == "vit":

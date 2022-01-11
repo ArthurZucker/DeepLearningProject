@@ -16,9 +16,10 @@ class MetricsModule():
         preds = torch.argmax(x, dim=1)
         self.metric(preds, y)
 
-    def log_metrics(self, name):
+    def log_metrics(self):
         metric = self.metric.compute()
-        wandb.log({f"{name}/Accuracy": metric})
+        to_return = metric.clone()
         # Reseting internal state such that metric ready for new data
         self.metric.reset()
         self.metric.cuda()
+        return to_return

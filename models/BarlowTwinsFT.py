@@ -28,12 +28,13 @@ class BarlowTwinsFT(LightningModule):
         self.barlow_twins.requires_grad_(False)
         self.use_backbone_features = network_param.use_backbone_features
         
+        self.in_features = list(self.barlow_twins.modules())[-1].in_features
         # @TODO fix the code correctly 
         if network_param.use_backbone_features:
             # if we want to test on the backbone features, remove the proj
-            self.in_features = self.barlow_twins.proj_channels
+            self.in_features = self.barlow_twins.in_features
             self.barlow_twins = self.barlow_twins.encoder
-            
+        
         self.linear = nn.Linear(self.in_features, self.num_cat)
 
     def forward(self, x):

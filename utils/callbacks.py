@@ -185,8 +185,8 @@ class LogMetricsCallBack(Callback):
     ) -> None:
 
         self.num_classes = pl_module.num_cat
-        self.metrics_train= MetricsModule( self.num_classes)
-        self.metrics_val = MetricsModule( self.num_classes)
+        self.metrics_train  = MetricsModule(self.num_classes)
+        self.metrics_val    = MetricsModule(self.num_classes)
 
     def on_train_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
@@ -198,8 +198,8 @@ class LogMetricsCallBack(Callback):
 
     def on_train_epoch_end(self, trainer, pl_module):
         """Called when the train epoch ends."""
-
-        self.metrics_train.log_metrics("train")
+        train = self.metrics_train.log_metrics()
+        pl_module.log("train/accuracy",train)
 
     def on_validation_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
@@ -211,8 +211,8 @@ class LogMetricsCallBack(Callback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         """Called when the validation epoch ends."""
-
-        self.metrics_val.log_metrics("val")
+        val = self.metrics_val.log_metrics()
+        pl_module.log("val/accuracy",val)
 
 
 class LogDinoImagesCallback(Callback):

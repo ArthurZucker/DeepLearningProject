@@ -43,8 +43,8 @@ class trainer(BaseTrainer):
     def get_callbacks(self):
 
         callbacks = [RichProgressBar(), LearningRateMonitor()]
-        return callbacks
-        if "Barlo" in self.config.arch:
+        
+        if "BarloTwins" == self.config.arch :
             callbacks += [
                 LogBarlowPredictionsCallback(self.config.log_pred_freq),
                 LogBarlowCCMatrixCallback(self.config.log_ccM_freq),
@@ -63,7 +63,7 @@ class trainer(BaseTrainer):
                 )
             ]
 
-        if "FT" in self.config.datamodule:
+        if "FT" in self.config.arch:
             callbacks += [LogMetricsCallBack()]
             monitor = "val/accuracy"
             mode = "max"
