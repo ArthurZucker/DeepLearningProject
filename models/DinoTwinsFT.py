@@ -9,12 +9,9 @@ from torch.nn import functional as F
 from torch.optim import Adam
 from utils.agent_utils import get_net
 
-from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
-from models.losses.dino_twins_loss import DinowTwinsLoss
-from models.DinoTwins import DinowTwins
-from utils.scheduler import cosine_scheduler
 
-from models.custom_layers.l2norm import L2Norm
+from models.DinoTwins import DinoTwins
+
 
 class DinowTwinsFT(LightningModule):
 
@@ -33,7 +30,7 @@ class DinowTwinsFT(LightningModule):
         if network_param.backbone_parameters is not None:
             self.patch_size = network_param.backbone_parameters["patch_size"]
             
-        self.pretrained_dinow_twin = DinowTwins(network_param,optim_param) #BarlowTwins(network_param)
+        self.pretrained_dinow_twin = DinoTwins(network_param,optim_param) #BarlowTwins(network_param)
         if network_param.weight_checkpoint is not None: 
             print(f"Loaded chekpoint from {network_param.weight_checkpoint}")
             self.pretrained_dinow_twin.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])

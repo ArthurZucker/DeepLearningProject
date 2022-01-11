@@ -16,7 +16,7 @@ from utils.scheduler import cosine_scheduler, Cosine_Scheduler
 from models.custom_layers.l2norm import L2Norm
 
 
-class DinowTwins(LightningModule):
+class DinoTwins(LightningModule):
     def __init__(self, network_param, optim_param=None):
         """method used to define our model parameters"""
         super().__init__()
