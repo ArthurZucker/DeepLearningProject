@@ -61,7 +61,7 @@ class Hparams:
     # gradient accumulation batch size
     accumulate_size: int = 2048
     # batch size for training
-    batch_size: int = 2048
+    batch_size: int = 512
     # maximum number of epochs
     max_epochs: int = 40
 
