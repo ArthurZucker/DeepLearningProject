@@ -29,7 +29,7 @@ class Hparams:
     wandb_project         : str           = f"{'test-'*test}deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "Dino"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    arch                  : str           = "DinoTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
     datamodule            : str           = "DinoDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
@@ -199,7 +199,7 @@ class DinoTwinConfig:
         backbone_parameters     : Dict[str, Any]    = dict_field(
             dict(
                 image_size      = 32,
-                patch_size      = 4,
+                patch_size      = 2,
                 num_classes     = 0,
                 dim             = 192,
                 depth           = 4,
