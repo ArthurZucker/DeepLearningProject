@@ -25,29 +25,29 @@ class Hparams:
     # ----------------------
     # Wandb Parameters
     # ----------------------
-    testing               : bool          = True
-    wandb_project         : str           = f"{'test'*testing}-deep-learning"     # name of the project
+    testing               : bool          = False
+    wandb_project         : str           = f"{'test-'*testing}deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "BarlowTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
-    datamodule            : str           = "BarlowTwinsDataModule"    # datamodule used. 
+    arch                  : str           = "Dino"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    datamodule            : str           = "DinoDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
     # Moreover, the datasets are different depending on the task: SSL or Eval.
-    dataset               : Optional[str] = "BarlowTwinsDataset"       # dataset : has to correspond to a file name
+    dataset               : Optional[str] = "DinoDataset"       # dataset : has to correspond to a file name
     agent                 : str           = "trainer"           # agent used for training, only one is available now
-    seed_everything       : Optional[int] =  6902               # seed for the whole run, if None a random seed will be selected, 6902 to use for the bugged run
+    seed_everything       : Optional[int] =  None               # seed for the whole run, if None a random seed will be selected, 6902 to use for the bugged run
     
     # --------------------
     # Training parameters
     # --------------------
     tune_lr               : bool          = False   # tune the model's learning rate 
-    tune_batch_size       : bool          = False   # tune the model's batch size 
+    tune_batch_size       : bool          = True   # tune the model's batch size 
     gpu                   : int           = 1       # gpu index
     precision             : int           = 32      # precision
     val_freq              : int           = 1       # validation frequency
     dev_run               : bool          = False   # developpment mode, only run 1 batch of train val and test
-    accumulate_size       : int           = 1024    # gradient accumulation batch size
+    accumulate_size       : int           = 16    # gradient accumulation batch size
     max_epochs            : int           = 400     # number of epochs
     asset_path            : str           = osp.join(os.getcwd(), "assets") # path to download data
 
@@ -68,7 +68,7 @@ class DatasetParams:
 
     num_workers        : int         = 20           # number of workers for dataloadersint
     input_size         : tuple       = (32, 32)     # image_size
-    batch_size         : int         = 512          # batch_size
+    batch_size         : int         = 128          # batch_size
     asset_path         : str         = osp.join(os.getcwd(), "assets")  # path to download the dataset
     n_crops            : int         = 5            # number of crops
     n_global_crops     : int         = 2            # number of global crops
