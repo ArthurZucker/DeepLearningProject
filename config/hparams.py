@@ -80,7 +80,7 @@ class DatasetParams:
 class OptimizerParams: 
     """Optimization parameters"""
 
-    optimizer           : str            = "Adam"  # Optimizer default vit: AdamW, default resnet50: Adam
+    optimizer           : str            = "AdamW"  # Optimizer default vit: AdamW, default resnet50: Adam
     lr                  : float          = 3e-4     # learning rate, default = 5e-4
     min_lr              : float          = 5e-6     # min lr reached at the end of the cosine schedule
     lr_sched_type       : str            = "step"   # Learning rate scheduler type.
@@ -156,7 +156,7 @@ class DinoConfig:
         backbone_parameters: Dict[str, Any]    = dict_field(
                 dict(
                     image_size  = 32,
-                    patch_size  = 4,
+                    patch_size  = 2,
                     num_classes = 0,
                     dim         = 192,
                     depth       = 4,
