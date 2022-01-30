@@ -227,7 +227,7 @@ class Parameters:
         """Post-initialization code"""
         # Mostly used to set some values based on the chosen hyper parameters
         # since we will use different models, backbones and datamodules
-        self.hparams.wandb_project = (f"{'test-'*self.hparams.test}sem-seg") 
+        self.hparams.wandb_project = (f"{'test-'*self.hparams.test}deep-learning") 
         # Set render number of channels
         if   "BarlowTwins" in self.hparams.arch: 
             self.network_param: BarlowConfig = BarlowConfig()
