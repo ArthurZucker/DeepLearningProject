@@ -77,7 +77,7 @@ class trainer(BaseTrainer):
             save_top_k = 5
             every_n_epochs = 1
 
-        if self.config.testing:  # don't need to save if we are just testing
+        if self.config.test:  # don't need to save if we are just testing
             save_top_k = 0
 
         callbacks += [
