@@ -26,7 +26,7 @@ class Hparams:
     # Wandb Parameters
     # ----------------------
     test                  : bool          = False
-    wandb_project         : str           = f"{'test-'*testing}deep-learning"     # name of the project
+    wandb_project         : str           = f"{'test-'*test}deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
     arch                  : str           = "Dino"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
