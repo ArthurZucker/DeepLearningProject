@@ -222,12 +222,12 @@ class Parameters:
 
     hparams    : Hparams         = Hparams()
     optim_param: OptimizerParams = OptimizerParams()
-
+    data_param : DatasetParams   = DatasetParams()
     def __post_init__(self): 
         """Post-initialization code"""
         # Mostly used to set some values based on the chosen hyper parameters
         # since we will use different models, backbones and datamodules
-
+        self.hparams.wandb_project = (f"{'test-'*self.hparams.test}sem-seg") 
         # Set render number of channels
         if   "BarlowTwins" in self.hparams.arch: 
             self.network_param: BarlowConfig = BarlowConfig()
@@ -239,7 +239,7 @@ class Parameters:
         if self.hparams.seed_everything is None: 
             self.hparams.seed_everything = random.randint(1, 10000)
 
-        self.data_param: DatasetParams = DatasetParams()
+        
         print("Random Seed: ", self.hparams.seed_everything)
         random.seed(self.hparams.seed_everything)
         torch.manual_seed(self.hparams.seed_everything)
