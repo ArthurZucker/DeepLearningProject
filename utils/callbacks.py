@@ -175,6 +175,9 @@ class LogDinowCCMatrixCallback(Callback):
         ax = sns.heatmap(heatmap, cmap="rainbow",cbar=False)
         plt.title(f"Cross correlation matrix")
         ax.set_axis_off()
+        ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+        plt.subplots_adjust(top=1, bottom=0, right=1,
+                            left=0, hspace=0, wspace=0)
         wandb.log({f"cc_Matrix/{name}" : (wandb.Image(plt))})
         plt.close()
         self.cc_M = None
@@ -316,21 +319,21 @@ class LogAttentionMapsCallback(Callback):
                 # return attention of the last block
                 return blk(x, return_attention=True)
     """
-    def __init__(self,log_student_distrib,nb_attention) -> None:
+    def __init__(self,log_att_freq,thresh,nb_attention) -> None:
         super().__init__()
-        self.log_freq = log_student_distrib
-        self.threshold  = 0.5
+        self.log_att_freq = log_att_freq
+        self.threshold  = thresh
         self.teacher_distrib  = None
         self.nb_attention_images = nb_attention
 
     def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx) -> None:
-        if batch_idx == 0 :
+        if batch_idx == 0  and pl_module.current_epoch % self.log_att_freq == 0:
             self.hooks = []
             self.hooks.append(self._register_layer_hooks(pl_module))
     
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
-        if batch_idx == 0:
+        if batch_idx == 0 and pl_module.current_epoch % self.log_att_freq == 0:
             attention_maps = []
             th_attention_map = []
             for i in range(self.nb_attention_images):
@@ -373,7 +376,7 @@ class LogAttentionMapsCallback(Callback):
                 attentions = nn.functional.interpolate(attentions.unsqueeze(0), scale_factor=pl_module.patch_size, mode="nearest")[0].cpu()
 
                 plt.ioff()
-                grid_img = torchvision.utils.make_grid(attentions, normalize=True, scale_each=True,nrow=nh//2)
+                grid_img = torchvision.utils.make_grid(attentions, normalize=True, scale_each=True,nrow=nh//2,padding =0, )
                 attention_maps.append([img.squeeze(0).cpu().numpy()]+list(grid_img.numpy()))
                 del grid_img
                 
@@ -383,6 +386,7 @@ class LogAttentionMapsCallback(Callback):
             self._clear_hooks()
         
     def show(self,imgs,th_attention_map):
+        #@TODO remove all whitespace
         import torchvision.transforms.functional as F
         plt.ioff()
         fix, axs = plt.subplots(nrows=len(imgs), ncols=len(imgs[0])+1,squeeze=True)
@@ -402,7 +406,8 @@ class LogAttentionMapsCallback(Callback):
             image = np.clip(mean*org + std,0,1)
             self.log_th_attention(image,th_attention_map[j],axs[j, i+1]) # log the thresholded attention maps
             
-        fix.subplots_adjust(wspace=0.005, hspace=0.005)
+        plt.subplots_adjust(top=1, bottom=0, right=1,
+                            left=0, hspace=0, wspace=0)
         attention_heads = wandb.Image(plt)
         wandb.log({"attention heads":attention_heads})
         plt.close()
@@ -454,7 +459,7 @@ class LogAttentionMapsCallback(Callback):
         named_layers = dict(pl_module.named_modules())
         attend_layers = []
         for name in named_layers:
-            if ".attend" in name and "student" in name:
+            if (".attend" in name and "student" in name) or (".attend" in name and "encoder" in name):
                 attend_layers.append(named_layers[name])
         self.attention = []
         self.hooks.append(attend_layers[-1].register_forward_hook(get_attention(self.attention)))

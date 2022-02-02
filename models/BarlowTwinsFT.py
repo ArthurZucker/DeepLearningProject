@@ -22,27 +22,30 @@ class BarlowTwinsFT(LightningModule):
         # Optimizer params
         self.optim_param = optim_param
         # Model
-        self.barlow_twins = BarlowTwins(network_param)
+        if network_param.backbone_parameters is not None:
+            self.patch_size = network_param.backbone_parameters["patch_size"]
+            
+        self.encoder = BarlowTwins(network_param)
         if network_param.weight_checkpoint is not None: 
-            self.barlow_twins.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
-        self.barlow_twins.requires_grad_(False)
+            self.encoder.load_state_dict(torch.load(network_param.weight_checkpoint)["state_dict"])
+        self.encoder.requires_grad_(False)
         self.use_backbone_features = network_param.use_backbone_features
         
-        self.in_features = list(self.barlow_twins.modules())[-1].in_features
+        self.in_features = list(self.encoder.modules())[-1].in_features
         # @TODO fix the code correctly 
         if network_param.use_backbone_features:
             # if we want to test on the backbone features, remove the proj
-            self.in_features = self.barlow_twins.in_features
-            self.barlow_twins = self.barlow_twins.encoder
+            self.in_features = self.encoder.in_features
+            self.encoder = self.encoder.encoder
         
         self.linear = nn.Linear(self.in_features, self.num_cat)
 
     def forward(self, x):
         # Feed the data through pretrained barlow twins and prediciton layer
         if self.use_backbone_features:
-            out = self.barlow_twins(x)
+            out = self.encoder(x)
         else:
-            out, _  = self.barlow_twins(x, x)
+            out, _  = self.encoder(x, x)
         out     = self.linear(out)
         return out
 

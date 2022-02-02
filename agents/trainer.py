@@ -49,8 +49,8 @@ class trainer(BaseTrainer):
                 LogBarlowCCMatrixCallback(self.config.log_ccM_freq),
             ]
 
-        elif self.config.arch == "Dino" or self.config.arch == "DinoTwins":
-            callbacks += [LogDinoImagesCallback(self.config.log_pred_freq)]
+        # elif self.config.arch == "Dino" or self.config.arch == "DinoTwins":
+        #     callbacks += [LogDinoImagesCallback(self.config.log_pred_freq)]
 
         if self.config.arch == "DinoTwins":
             callbacks += [LogDinowCCMatrixCallback(self.config.log_dino_freq)]
@@ -58,7 +58,7 @@ class trainer(BaseTrainer):
         if self.encoder == "vit":
             callbacks += [
                 LogAttentionMapsCallback(
-                    self.config.attention_threshold, self.config.nb_attention
+                    self.config.log_att_freq,self.config.attention_threshold, self.config.nb_attention
                 )
             ]
 

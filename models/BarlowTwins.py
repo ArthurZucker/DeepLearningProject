@@ -20,11 +20,14 @@ class BarlowTwins(LightningModule):
         self.optim_param = optim_param
         # projection layers
         self.proj_dim = network_param.bt_proj_dim
-        
+    
+        if network_param.backbone_parameters is not None:
+            self.patch_size = network_param.backbone_parameters["patch_size"]
+            
         self.nb_proj_layers = network_param.nb_proj_layers
         # get backbone model and adapt it to the task
         self.encoder = get_net(
-            network_param.backbone,network_param
+            network_param.backbone,network_param.backbone_parameters
         )  # TODO add encoder name to the hparams, use getnet() to get the encoder
         self.in_features = list(self.encoder.modules())[-1].in_features
         name_classif = list(self.encoder.named_children())[-1][0]

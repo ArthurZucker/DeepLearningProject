@@ -25,16 +25,16 @@ class Hparams:
     # ----------------------
     # Wandb Parameters
     # ----------------------
-    test                  : bool          = False
+    test                  : bool          = True
     wandb_project         : str           = f"{'test-'*test}deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "DinoTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
-    datamodule            : str           = "DinoDataModule"    # datamodule used. 
+    arch                  : str           = "BarlowTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    datamodule            : str           = "BarlowTwinsDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
     # Moreover, the datasets are different depending on the task: SSL or Eval.
-    dataset               : Optional[str] = "DinoDataset"       # dataset : has to correspond to a file name
+    dataset               : Optional[str] = "BarlowTwinsDataset"       # dataset : has to correspond to a file name
     agent                 : str           = "trainer"           # agent used for training, only one is available now
     seed_everything       : Optional[int] =  None               # seed for the whole run, if None a random seed will be selected, 6902 to use for the bugged run
     
@@ -42,25 +42,25 @@ class Hparams:
     # Training parameters
     # --------------------
     tune_lr               : bool          = False   # tune the model's learning rate 
-    tune_batch_size       : bool          = True   # tune the model's batch size 
+    tune_batch_size       : bool          = False   # tune the model's batch size 
     gpu                   : int           = 1       # gpu index
     precision             : int           = 32      # precision
     val_freq              : int           = 1       # validation frequency
     dev_run               : bool          = False   # developpment mode, only run 1 batch of train val and test
     accumulate_size       : int           = 16    # gradient accumulation batch size
-    max_epochs            : int           = 400     # number of epochs
+    max_epochs            : int           = 1000     # number of epochs
     asset_path            : str           = osp.join(os.getcwd(), "assets") # path to download data
 
     # --------------------
     # Logging parameters
     # --------------------
-    log_pred_freq         : int           = 10      # log_pred_freq
-    log_ccM_freq          : int           = 1       # log cc_M matrix frequency
-    log_dino_freq         : int           = 1       # log output frrequency for dino
+    log_pred_freq         : int           = 100      # log_pred_freq
+    log_ccM_freq          : int           = 10       # log cc_M matrix frequency
+    log_dino_freq         : int           = 10       # log output frrequency for dino
     weights_path          : str           = osp.join(os.getcwd(), "weights") # path to save weights
-    attention_threshold   : float         = 0.8     # threshold used to get attention map of multiple heads
-    nb_attention          : int           = 5       # number of images used to display attention maps
-
+    attention_threshold   : float         = 0.6     # threshold used to get attention map of multiple heads
+    nb_attention          : int           = 6       # number of images used to display attention maps
+    log_att_freq          : int           = 10       # log attention maps matrix frequency
 
 @dataclass
 class DatasetParams: 
@@ -68,7 +68,7 @@ class DatasetParams:
 
     num_workers        : int         = 20           # number of workers for dataloadersint
     input_size         : tuple       = (32, 32)     # image_size
-    batch_size         : int         = 128          # batch_size
+    batch_size         : int         = 64          # batch_size
     asset_path         : str         = osp.join(os.getcwd(), "assets")  # path to download the dataset
     n_crops            : int         = 5            # number of crops
     n_global_crops     : int         = 2            # number of global crops
@@ -117,14 +117,28 @@ class BarlowConfig:
     """
 
     bt_proj_dim  : int = 2048  # number of channels to use for projection
-    backbone     : str = choice("resnet50", "swinS", default="resnet50") # backbone encoder for barlow twins
+    backbone     : str = "vit" #choice("resnet50", "swinS", default="resnet50") # backbone encoder for barlow twins
     # lambda coefficient used to scale the scale of the redundancy loss so it doesn't overwhelm the invariance loss
     lmbda                 : float         = 0.005
     use_backbone_features : bool          = True    # if set to false, the barlow projections are used
     num_cat               : int           = 10     # number of classes to use for the fine tuning task
     nb_proj_layers        : int           = 3
-    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(),"epoch=29-step=749.ckpt") # model checkpoint used in evaluation phase
-
+    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(),"weights/ancient-dust-44/epoch=71-val/loss=891.18.ckpt") # model checkpoint used in evaluation phase
+    backbone_parameters         : Dict[str, Any]    = None
+    if  backbone == "vit":
+        backbone_parameters     : Dict[str, Any]    = dict_field(
+            dict(
+                image_size      = 32,
+                patch_size      = 2,
+                num_classes     = 0,
+                dim             = 192,
+                depth           = 4,
+                heads           = 6,
+                mlp_dim         = 1024,
+                dropout         = 0.1,
+                emb_dropout     = 0.1,
+            )
+        )
 
 @dataclass
 class DinoConfig: 
