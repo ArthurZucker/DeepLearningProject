@@ -62,14 +62,14 @@ class trainer(BaseTrainer):
                 )
             ]
 
-        # if "FT" in self.config.arch:
-        #     callbacks += [LogMetricsCallBack()]
-        #     monitor = "val/Accuracy"
-        #     mode = "max"
-        # else:
-        #     monitor = "val/loss"
-        #     mode = "min"
-        # wandb.define_metric(monitor, summary=mode)
+        if "FT" in self.config.arch:
+            callbacks += [LogMetricsCallBack()]
+            monitor = "val/Accuracy"
+            mode = "max"
+        else:
+            monitor = "val/loss"
+            mode = "min"
+        wandb.define_metric(monitor, summary=mode)
         if "Dino" in self.config.arch:
             save_top_k = -1
             every_n_epochs = 20
