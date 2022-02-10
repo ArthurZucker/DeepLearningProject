@@ -271,7 +271,7 @@ class AutoSaveModelCheckpoint(ModelCheckpoint):
             trainer.training_type_plugin.remove_checkpoint(del_filepath)
 
         name = f"top-{k}-{current:0.5f}"
-        wandb.log_artifact(filepath,name = name)
+        wandb.log_artifact(filepath,type = "model",name = name)
         # wandb.save(filepath)
         if self.verbose:  # only log when there are already 5 models
             epoch = monitor_candidates.get("epoch")
