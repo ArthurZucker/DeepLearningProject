@@ -13,6 +13,7 @@ from utils.callbacks import (
     LogDinoImagesCallback,
     LogDinowCCMatrixCallback,
     LogMetricsCallBack,
+    AutoSaveModelCheckpoint,
 )
 
 from agents.BaseTrainer import BaseTrainer
@@ -70,7 +71,7 @@ class trainer(BaseTrainer):
             monitor = "val/loss"
             mode = "min"
         wandb.define_metric(monitor, summary=mode)
-        if "Dino" in self.config.arch:
+        if  self.config.arch == "Dino":
             save_top_k = -1
             every_n_epochs = 20
         else:
@@ -81,7 +82,8 @@ class trainer(BaseTrainer):
             save_top_k = 0
 
         callbacks += [
-            ModelCheckpoint(
+            AutoSaveModelCheckpoint #ModelCheckpoint
+            (
                 monitor=monitor,
                 mode=mode,
                 filename="{epoch:02d}-{val/loss:.2f}",

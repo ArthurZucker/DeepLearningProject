@@ -29,19 +29,19 @@ class Hparams:
     wandb_project         : str           = f"{'test-'*test}deep-learning"     # name of the project
     wandb_entity          : str           = "dinow-twins"       # name of the wandb entity,
     save_dir              : str           = osp.join(os.getcwd(), "wandb") # directory to save wandb outputs
-    arch                  : str           = "DinoTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
-    datamodule            : str           = "DinoDataModule"    # datamodule used. 
+    arch                  : str           = "BarlowTwins"              # choice("BarlowTwinsFT","BarlowTwins", "Dino", "DinoTwins", default="BarlowTwins")
+    datamodule            : str           = "BarlowTwinsDataModule"    # datamodule used. 
     # The same module is used for dino/dinotwins and a different one is used for barlow twins
     # dataset used. The same dataset is used for dino/dinotwins and a different one is used for barlow twins 
     # Moreover, the datasets are different depending on the task: SSL or Eval.
-    dataset               : Optional[str] = "DinoDataset"       # dataset : has to correspond to a file name
+    dataset               : Optional[str] = "BarlowTwinsDataset"       # dataset : has to correspond to a file name
     agent                 : str           = "trainer"           # agent used for training, only one is available now
     seed_everything       : Optional[int] =  None               # seed for the whole run, if None a random seed will be selected, 6902 to use for the bugged run
     
     # --------------------
     # Training parameters
     # --------------------
-    tune_lr               : bool          = False   # tune the model's learning rate 
+    tune_lr               : bool          = True   # tune the model's learning rate 
     tune_batch_size       : bool          = False   # tune the model's batch size 
     gpu                   : int           = 1       # gpu index
     precision             : int           = 32      # precision
@@ -123,7 +123,7 @@ class BarlowConfig:
     use_backbone_features : bool          = True    # if set to false, the barlow projections are used
     num_cat               : int           = 10     # number of classes to use for the fine tuning task
     nb_proj_layers        : int           = 3
-    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(),"weights/visionary-silence-47/epoch=557-val/loss=751.05.ckpt") # model checkpoint used in evaluation phase
+    weight_checkpoint     : Optional[str] = osp.join(os.getcwd(), ) #"weights/visionary-silence-47/epoch=557-val/loss=751.05.ckpt") # model checkpoint used in evaluation phase
     backbone_parameters         : Dict[str, Any]    = None
     if  backbone == "vit":
         backbone_parameters     : Dict[str, Any]    = dict_field(
@@ -213,7 +213,7 @@ class DinoTwinConfig:
         backbone_parameters     : Dict[str, Any]    = dict_field(
             dict(
                 image_size      = 32,
-                patch_size      = 2,
+                patch_size      = 4,
                 num_classes     = 0,
                 dim             = 192,
                 depth           = 4,
@@ -225,7 +225,7 @@ class DinoTwinConfig:
         )
 
     weight_checkpoint           : Optional[str] = osp.join(
-        os.getcwd(),
+        os.getcwd(),"weights/bright-pyramid-55/epoch=399-val/loss=6.61.ckpt"
                                 # "weights/dinowtwins_2heads/epoch=68-step=13523.ckpt",
     )                           # model checkpoint used in evaluation phase
 

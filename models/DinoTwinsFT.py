@@ -13,7 +13,7 @@ from utils.agent_utils import get_net
 from models.DinoTwins import DinoTwins
 
 
-class DinowTwinsFT(LightningModule):
+class DinoTwinsFT(LightningModule):
 
     def __init__(self, network_param, optim_param = None):
         '''method used to define our model parameters'''
