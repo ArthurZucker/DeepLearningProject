@@ -41,7 +41,7 @@ class Hparams:
     # --------------------
     # Training parameters
     # --------------------
-    tune_lr               : bool          = True   # tune the model's learning rate 
+    tune_lr               : bool          = False   # tune the model's learning rate 
     tune_batch_size       : bool          = False   # tune the model's batch size 
     gpu                   : int           = 1       # gpu index
     precision             : int           = 32      # precision
