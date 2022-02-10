@@ -270,11 +270,13 @@ class AutoSaveModelCheckpoint(ModelCheckpoint):
         if del_filepath is not None and filepath != del_filepath:
             trainer.training_type_plugin.remove_checkpoint(del_filepath)
 
-        wandb.save(filepath)
-        if self.verbose and len(self.best_k_models) == k:  # only log when there are already 5 models
+        name = f"top-{k}-{current:0.5f}"
+        wandb.log_artifact(filepath,name = name)
+        # wandb.save(filepath)
+        if self.verbose:  # only log when there are already 5 models
             epoch = monitor_candidates.get("epoch")
             step = monitor_candidates.get("step")
-            rank_zero_info(f"Saved '{filepath}' weights to wandb")
+            rank_zero_info(f"Saved '{name}' weights to wandb")
         
 
 class LogDinoImagesCallback(Callback):
