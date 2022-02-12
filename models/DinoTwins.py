@@ -39,6 +39,7 @@ class DinoTwins(LightningModule):
         # initialize loss TODO get max epochs from the hparams config directly instead of model specific params
         self.loss = DinowTwinsLoss(network_param, optim_param.max_epochs)
 
+        
         # get backbone models
         self.head_in_features = 0
         self.student_backbone = get_net(
@@ -47,6 +48,7 @@ class DinoTwins(LightningModule):
         self.teacher_backbone = get_net(
             network_param.backbone, network_param.backbone_parameters
         )
+        
 
         # Adapt models to the self-supervised task
         self.head_in_features = list(self.student_backbone.modules())[-1].in_features
@@ -80,8 +82,8 @@ class DinoTwins(LightningModule):
                 self.load_state_dict(
                     torch.load(network_param.weight_checkpoint)["state_dict"]
                 )
-            except:
-                pass
+            except Exception as e:
+                print(e)
 
     def forward(self, crops):
 

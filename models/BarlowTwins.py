@@ -17,9 +17,10 @@ class BarlowTwins(LightningModule):
         #self.loss = BarlowTwinsLoss
         self.loss = CrossCorrelationMatrixLoss(network_param.lmbda)
         # optimizer parameters
-        self.optim_param = optim_param
+        if optim_param is not None:
+            self.optim_param = optim_param
 
-        self.lr = optim_param.lr
+            self.lr = optim_param.lr
         # projection layers
         self.proj_dim = network_param.bt_proj_dim
     

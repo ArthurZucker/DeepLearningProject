@@ -79,18 +79,22 @@ class trainer(BaseTrainer):
             every_n_epochs = 1
 
         if self.config.test:  # don't need to save if we are just testing
-            save_top_k = 0
+            save_top_k = 2
 
         callbacks += [
             AutoSaveModelCheckpoint #ModelCheckpoint
             (
+                config = (self.network_param).__dict__,
+                project = self.config.wandb_project,
+                entity = self.config.wandb_entity,
                 monitor=monitor,
                 mode=mode,
-                filename="{epoch:02d}-{val/loss:.2f}",
+                filename="epoch-{epoch:02d}-val_loss={val/loss:.2f}",
                 verbose=True,
                 dirpath=self.config.weights_path + f"/{str(wandb.run.name)}",
                 save_top_k=save_top_k,
                 every_n_epochs=every_n_epochs,
+                auto_insert_metric_name=False
             )
         ]  # our model checkpoint callback
 

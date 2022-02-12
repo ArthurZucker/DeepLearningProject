@@ -22,18 +22,27 @@ def main():
     for k,v in vars(parameters).items():
         for key,value in vars(v).items():
             wdb_config[f"{k}-{key}"]=value
+    wandb.init(
+        config=wdb_config,# vars(parameters),  # FIXME use the full parameters
+        project=parameters.hparams.wandb_project,
+        entity=parameters.hparams.wandb_entity,
+        allow_val_change=True,
+    )
     wandb_run = WandbLogger(
         config=wdb_config,# vars(parameters),  # FIXME use the full parameters
         project=parameters.hparams.wandb_project,
         entity=parameters.hparams.wandb_entity,
         allow_val_change=True,
-        save_dir=parameters.hparams.save_dir,
+        #save_dir=parameters.hparams.save_dir,
     )
+    
     config = parameters
     # Create the Agent and pass all the configuration to it then run it..
     agent_class = globals()[config.hparams.agent]
     agent = agent_class(config, wandb_run)
     agent.run()
+    
+    
 
 
 

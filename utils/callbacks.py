@@ -1,3 +1,5 @@
+from ast import alias
+from importlib_metadata import metadata
 from seaborn.matrix import heatmap
 import wandb
 from pytorch_lightning.callbacks import Callback,ModelCheckpoint
@@ -225,9 +227,11 @@ class LogMetricsCallBack(Callback):
         pl_module.log("val/Accuracy",val)
 
 class AutoSaveModelCheckpoint(ModelCheckpoint):
-    def __init__(self, dirpath: Optional[_PATH] = None, filename: Optional[str] = None, monitor: Optional[str] = None, verbose: bool = False, save_last: Optional[bool] = None, save_top_k: int = 1, save_weights_only: bool = False, mode: str = "min", auto_insert_metric_name: bool = True, every_n_train_steps: Optional[int] = None, train_time_interval: Optional[timedelta] = None, every_n_epochs: Optional[int] = None, save_on_train_epoch_end: Optional[bool] = None, every_n_val_epochs: Optional[int] = None):
+    def __init__(self, config,project,entity, dirpath: Optional[_PATH] = None, filename: Optional[str] = None, monitor: Optional[str] = None, verbose: bool = False, save_last: Optional[bool] = None, save_top_k: int = 1, save_weights_only: bool = False, mode: str = "min", auto_insert_metric_name: bool = True, every_n_train_steps: Optional[int] = None, train_time_interval: Optional[timedelta] = None, every_n_epochs: Optional[int] = None, save_on_train_epoch_end: Optional[bool] = None, every_n_val_epochs: Optional[int] = None):
         super().__init__(dirpath, filename, monitor, verbose, save_last, save_top_k, save_weights_only, mode, auto_insert_metric_name, every_n_train_steps, train_time_interval, every_n_epochs, save_on_train_epoch_end, every_n_val_epochs)
-        
+        self.config = config
+        self.project = project
+        self.entity = entity
     def _update_best_and_save(
         self, current: torch.Tensor, trainer: "pl.Trainer", monitor_candidates: Dict[str, _METRIC]
     ) -> None:
@@ -270,14 +274,43 @@ class AutoSaveModelCheckpoint(ModelCheckpoint):
         if del_filepath is not None and filepath != del_filepath:
             trainer.training_type_plugin.remove_checkpoint(del_filepath)
 
-        name = f"top-{k}-{current:0.5f}"
-        wandb.log_artifact(filepath,type = "model",name = name)
-        # wandb.save(filepath)
+        reverse = False if self.mode == "min" else True
+        score = sorted(self.best_k_models.values(),reverse = reverse)
+        indices = [(i+1) for i, x in enumerate(score) if x == current]
+        alias = f"top-{indices[0]}"                      # 
+        name  = f"{wandb.run.name}"  # name of the model
+        model_artifact = wandb.Artifact(
+            type = "model",
+            name = name,
+            metadata = self.config
+        )
+        model_artifact.add_file(filepath)
+        wandb.log_artifact(model_artifact,aliases = [alias])
+        
+        #------------- Clean up previous version -----------------
+        
         if self.verbose:  # only log when there are already 5 models
             epoch = monitor_candidates.get("epoch")
             step = monitor_candidates.get("step")
             rank_zero_info(f"Saved '{name}' weights to wandb")
+            
+    def del_artifacts(self):
+        api = wandb.Api(overrides={"project": self.project, "entity": self.entity})
+        artifact_type, artifact_name = "model",f"{wandb.run.name}" 
+        for version in api.artifact_versions(artifact_type, artifact_name):
+            # Clean previous versions with the same alias, to keep only the latest top k.
+            if len(version.aliases) == 0: # this means that it does not have the latest alias
+                # either this works, or I will have to remove the model with the alias first then log the next
+                version.delete()
+                
+                
+    def on_exception(self, trainer, pl_module):
+        """Called when the training is interrupted by KeyboardInterrupt."""
+        self.del_artifacts()
         
+    def on_train_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        self.del_artifacts()
+
 
 class LogDinoImagesCallback(Callback):
     def __init__(self,log_pred_freq) -> None:
