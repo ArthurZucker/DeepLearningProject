@@ -213,7 +213,7 @@ class DinoTwinConfig:
         backbone_parameters     : Dict[str, Any]    = dict_field(
             dict(
                 image_size      = 32,
-                patch_size      = 4,
+                patch_size      = 2,
                 num_classes     = 0,
                 dim             = 192,
                 depth           = 4,
