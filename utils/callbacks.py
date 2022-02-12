@@ -23,7 +23,7 @@ class LogBarlowPredictionsCallback(Callback):
         self.log_pred_freq = log_pred_freq
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx
     ):
         """Called when the training batch ends."""
         # Let's log 20 sample image predictions from first batch
@@ -92,7 +92,7 @@ class LogBarlowCCMatrixCallback(Callback):
         self.cc_M  = None
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx
     ):
         """Called when the training batch ends."""
         # Let's log 20 sample image predictions from first batch
@@ -149,7 +149,7 @@ class LogDinowCCMatrixCallback(Callback):
         self.cc_M  = None
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx
     ):
         """Called when the training batch ends."""
         # Let's log 20 sample image predictions from first batch
@@ -201,7 +201,7 @@ class LogMetricsCallBack(Callback):
         self.metrics_val    = MetricsModule(self.num_classes)
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx
     ):
         """Called when the train batch ends."""
 
@@ -303,11 +303,10 @@ class AutoSaveModelCheckpoint(ModelCheckpoint):
                 # either this works, or I will have to remove the model with the alias first then log the next
                 version.delete()
                 
-                
-    def on_exception(self, trainer, pl_module):
-        """Called when the training is interrupted by KeyboardInterrupt."""
+    def on_exception(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", exception: BaseException) -> None:
         self.del_artifacts()
-        
+        return super().on_exception(trainer, pl_module, exception)
+    
     def on_train_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self.del_artifacts()
 
@@ -318,7 +317,7 @@ class LogDinoImagesCallback(Callback):
         self.log_pred_freq = log_pred_freq
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx
     ):
         """Called when the training batch ends."""
         # Let's log 20 sample image predictions from first batch
