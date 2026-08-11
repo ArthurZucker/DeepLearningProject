@@ -1,3 +1,5 @@
+
+
 # Project Description 
  
 In recent years, deep learning with self-supervision for images has gained a lot of traction in the vision community. As self-supervised models' performances keep getting closer to their supervised counterparts, 2 recent papers have stood out to us. First, [DINO](https://arxiv.org/pdf/2104.14294.pdf) has set a new SOTA for self-supervised models on [ImageNet](https://image-net.org/) and shown how Vision Transfomers learn to pay attention to important elements in Self-Supervised settings. Second, although not beating the SOTA, [Barlow Twins](https://arxiv.org/pdf/2103.03230.pdf) proved that Self-Supervised models can naturally avoid collapse by using a cross correlation matrix as the loss function, and enforce its convergence towards the identity matrix.<br />
@@ -5,17 +7,17 @@ Our primary goal is to combine ideas from DINO and Barlow Twins to design a new 
 
 ## Barlow Twins Architecture
 <p align="center">
-  <img width="500" src="images\BarlowTwins.png">
+  <img width="500" src="images/BarlowTwins.png">
 </p>
 
 ## DINO Architecture
 <p align="center">
-  <img width="500" src="images\DINO.drawio.svg">
+  <img width="500" src="images/DINO.drawio.svg">
 </p>
 
 ## DINO Twins Architecture
 <p align="center">
-  <img width="500" src="images\DinoTwins.drawio.svg">
+  <img width="500" src="images/DinoTwins.drawio.svg">
 </p>
 
 # Primary Results
